@@ -3,12 +3,13 @@ export interface MenuItemLike<T> {
     acceptsContext?: boolean;
 }
 
-export class MenuModel<T> {
+// Item 保留具体菜单项的字段（如 label、description），否则调用方会丢失这些类型信息。
+export class MenuModel<T, Item extends MenuItemLike<T> = MenuItemLike<T>> {
     private selectedIndex = 0;
     private contextValue = "";
-    readonly items: Array<MenuItemLike<T>>;
+    readonly items: Array<Item>;
 
-    constructor(items: Array<MenuItemLike<T>>) {
+    constructor(items: Array<Item>) {
         if (items.length === 0) throw new Error("Menu requires at least one item");
         this.items = items;
     }
@@ -17,7 +18,7 @@ export class MenuModel<T> {
         return this.selectedIndex;
     }
 
-    get selected(): MenuItemLike<T> {
+    get selected(): Item {
         return this.items[this.selectedIndex]!;
     }
 
@@ -29,7 +30,7 @@ export class MenuModel<T> {
         this.selectedIndex = (this.selectedIndex + delta + this.items.length) % this.items.length;
     }
 
-    selectNumber(number: number): MenuItemLike<T> | undefined {
+    selectNumber(number: number): Item | undefined {
         if (number < 1 || number > this.items.length) return undefined;
         this.selectedIndex = number - 1;
         return this.selected;

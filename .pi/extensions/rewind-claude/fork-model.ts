@@ -1,10 +1,16 @@
 import type { Model, ThinkingLevel } from "@earendil-works/pi-ai";
 
+/**
+ * pi-ai 的 ThinkingLevel 描述模型能支持的档位，不含 "off"；
+ * 而 Pi 运行时的思考级别额外包含 "off" 一档，Fork 前后需要原样保留。
+ */
+export type RuntimeThinkingLevel = ThinkingLevel | "off";
+
 export interface PreservedForkRuntime {
     sourceSessionFile: string | undefined;
     provider: string;
     modelId: string;
-    thinkingLevel: ThinkingLevel;
+    thinkingLevel: RuntimeThinkingLevel;
 }
 
 interface PendingForkRuntime extends PreservedForkRuntime {
@@ -14,7 +20,7 @@ interface PendingForkRuntime extends PreservedForkRuntime {
 interface ForkRuntimeActions {
     findModel(provider: string, modelId: string): Model<any> | undefined;
     setModel(model: Model<any>): Promise<boolean>;
-    setThinkingLevel(level: ThinkingLevel): void;
+    setThinkingLevel(level: RuntimeThinkingLevel): void;
 }
 
 let pendingRuntime: PendingForkRuntime | undefined;

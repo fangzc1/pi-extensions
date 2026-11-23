@@ -2,6 +2,7 @@ import {
     getLanguageFromPath,
     highlightCode,
     keyHint,
+    keyText,
     type Theme,
 } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth, type Component } from "@earendil-works/pi-tui";
@@ -34,8 +35,12 @@ function trimTrailingEmptyLines(lines: string[]): string[] {
 
 export function getExpandHint(): string {
     try {
-        // keyHint 在未注册键位时会返回空串，此时用默认文案保证提示语可读。
-        return keyHint("app.tools.expand", "to expand") || "ctrl+o to expand";
+        // 键位未注册时 keyText 返回空串，但 keyHint 仍会拼出 " to expand"（含前导空格），
+        // 因此只能靠 keyText 判空，否则提示语会渲染成 "... more lines,  to expand"。
+        if (!keyText("app.tools.expand")) {
+            return "ctrl+o to expand";
+        }
+        return keyHint("app.tools.expand", "to expand");
     } catch {
         // 非 TUI 测试或 Theme 尚未初始化时，保证渲染器仍可安全工作。
         return "ctrl+o to expand";

@@ -96,7 +96,8 @@ export class DoubleEscapeEditor implements EditorComponent {
         this.base.borderColor = value;
     }
 
-    render(width: number): string[] {
+    // 转发基类渲染结果，EditorComponent.render 的返回类型为只读行数组。
+    render(width: number): readonly string[] {
         return this.base.render(width);
     }
 

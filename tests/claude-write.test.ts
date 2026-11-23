@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
+import { initTheme } from "@earendil-works/pi-coding-agent";
 import { stripTerminalSequences, visibleWidth } from "@earendil-works/pi-tui";
 import { createClaudeWriteToolDefinition } from "../.pi/extensions/claude-style/index.ts";
 import {
@@ -11,6 +12,10 @@ import {
     createWriteViewModel,
     type ClaudeWriteTheme,
 } from "../.pi/extensions/claude-style/write-view.ts";
+
+// Pi 的 highlightCode 读取模块级全局主题，未初始化会抛 "Theme not initialized"。
+// 测试进程独立，这里初始化为内置主题即可，注入的 plainTheme 仍负责其余着色。
+initTheme();
 
 const plainTheme: ClaudeWriteTheme = {
     fg: (_color, text) => text,

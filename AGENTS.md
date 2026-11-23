@@ -2,11 +2,11 @@
 
 ## Project Structure & Module Organization
 
-This repository is a TypeScript package of Pi and Codex extensions.
+This repository is a TypeScript package of Pi extensions.
 
 - `.pi/extensions/` contains the runtime extensions. Standalone modules include `response-timer.ts`, `conversation-logger.ts`, and `model-thinking-memory.ts`; grouped features live in `claude-style/` and `rewind-claude/`.
 - `tests/` contains tests for the top-level extensions and integrations. Rewind-specific tests are co-located in `.pi/extensions/rewind-claude/`.
-- `.codex/hooks.json` and `.codex/scripts/` define the Codex conversation logging hook. `docs/` contains product notes and design decisions; `hello.html` is a standalone demo.
+- `docs/` contains product notes and design decisions.
 - `package.json` declares Pi entrypoints and scripts; `tsconfig.json` enables strict, no-emit type checking.
 
 ## Build, Test, and Development Commands
@@ -14,7 +14,7 @@ This repository is a TypeScript package of Pi and Codex extensions.
 There is no bundle or build step; Pi loads the TypeScript extensions directly.
 
 - `npm test` runs all root tests plus the Rewind test files.
-- `npm run typecheck` runs strict TypeScript checking and syntax-checks the Codex logger script.
+- `npm run typecheck` runs strict TypeScript checking.
 - `cd .pi/extensions/rewind-claude && npm test` runs only the Rewind extension tests.
 
 ## Coding Style & Naming Conventions
@@ -27,7 +27,7 @@ Tests use Node’s built-in `node:test` runner with `node:assert/strict`; no cov
 
 ## Commit & Pull Request Guidelines
 
-Recent history uses Conventional Commit-style subjects such as `feat(response-timer): ...` and `feat: ...`. Use a concise imperative subject with an optional scope (`fix(claude-style): ...`, `test: ...`). Keep commits focused. Pull requests should explain behavior changes, list validation commands and results, link an issue when applicable, and include screenshots or terminal output for TUI/rendering changes. Call out changes to Pi/Codex hooks or generated log behavior.
+Recent history uses Conventional Commit-style subjects such as `feat(response-timer): ...` and `feat: ...`. Use a concise imperative subject with an optional scope (`fix(claude-style): ...`, `test: ...`). Keep commits focused. Pull requests should explain behavior changes, list validation commands and results, link an issue when applicable, and include screenshots or terminal output for TUI/rendering changes. Call out changes to Pi hooks or generated log behavior.
 
 ## Runtime and Configuration Notes
 

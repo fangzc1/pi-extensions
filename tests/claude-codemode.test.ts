@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { initTheme } from "@earendil-works/pi-coding-agent";
 import { stripTerminalSequences, visibleWidth } from "@earendil-works/pi-tui";
 
 import { createClaudeCodemodeToolRenderer } from "../.pi/extensions/claude-style/index.ts";
@@ -11,6 +12,10 @@ import {
 
 /** 任何卡片式背景都会破坏 Claude Code 的无边框观感。 */
 const BACKGROUND_ANSI = /\u001b\[(?:4[0-7]|10[0-7]|48(?:;[25];[^m]+)?)m/u;
+
+// Pi 的 highlightCode 读取模块级全局主题，未初始化会抛 "Theme not initialized"。
+// 测试进程独立，这里初始化为内置主题即可，着色结果随后由 stripTerminalSequences 剥离。
+initTheme();
 
 const plainTheme = {
     fg: (_color: string, text: string) => text,

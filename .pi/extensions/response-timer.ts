@@ -97,7 +97,8 @@ export default function (pi: ExtensionAPI) {
     let renderTimer: ReturnType<typeof setInterval> | null = null;
     let latestTui: TUI | null = null;
     let timerWidget: TimerWidget | null = null;
-    const timerLines = new WeakSet<string[]>();
+    // EditorComponent.render 返回只读行数组，这里按引用去重即可，不得改写内容。
+    const timerLines = new WeakSet<readonly string[]>();
 
     function clearAllTimers() {
         if (renderTimer !== null) { clearInterval(renderTimer); renderTimer = null; }

@@ -166,7 +166,7 @@ export class RewindPointMenu<T> implements Component {
 }
 
 abstract class InteractiveMenu<T, Item extends RewindMenuItem<T>> implements Component {
-    protected readonly model: MenuModel<T>;
+    protected readonly model: MenuModel<T, Item>;
     protected readonly items: Item[];
     private readonly onDone: (result: RewindMenuResult<T> | null) => void;
     private readonly requestRender: () => void;
@@ -175,7 +175,7 @@ abstract class InteractiveMenu<T, Item extends RewindMenuItem<T>> implements Com
         this.items = options.items;
         this.onDone = options.onDone;
         this.requestRender = options.requestRender;
-        this.model = new MenuModel(options.items);
+        this.model = new MenuModel<T, Item>(options.items);
     }
 
     abstract render(width: number): string[];
