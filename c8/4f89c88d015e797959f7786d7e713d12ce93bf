@@ -1,0 +1,133 @@
+.gitignore
+  h_51bd2d183e5a5b 2
+  s_98f85865bbd0d2::t_f3e9b579cfbf51 1
+.pi/extensions/claude-style/builtin-tools.ts
+  h_51bd2d183e5a5b 1-84
+.pi/extensions/claude-style/codemode-tool.ts
+  h_51bd2d183e5a5b 1-62
+.pi/extensions/claude-style/codemode-view.ts
+  h_51bd2d183e5a5b 1-309
+.pi/extensions/claude-style/edit-tool.ts
+  h_51bd2d183e5a5b 1-131
+.pi/extensions/claude-style/edit-view.ts
+  h_51bd2d183e5a5b 1-393
+.pi/extensions/claude-style/index.ts
+  h_51bd2d183e5a5b 1-43
+.pi/extensions/claude-style/tool-view.ts
+  h_51bd2d183e5a5b 1-183
+.pi/extensions/claude-style/write-tool.ts
+  h_51bd2d183e5a5b 1-104
+.pi/extensions/claude-style/write-view.ts
+  h_51bd2d183e5a5b 1-145
+.pi/extensions/conversation-logger.ts
+  h_51bd2d183e5a5b 1-205
+.pi/extensions/custom-status-bar.ts
+  h_51bd2d183e5a5b 1-161
+.pi/extensions/model-collaboration/core.ts
+  h_51bd2d183e5a5b 1-122
+.pi/extensions/model-collaboration/diagnostics.ts
+  h_51bd2d183e5a5b 1-96
+.pi/extensions/model-collaboration/index.ts
+  h_51bd2d183e5a5b 1-241
+.pi/extensions/model-collaboration/model-panel.ts
+  h_51bd2d183e5a5b 1-86
+.pi/extensions/model-collaboration/progress.ts
+  h_51bd2d183e5a5b 1-115
+.pi/extensions/model-thinking-memory.ts
+  h_51bd2d183e5a5b 1-271
+.pi/extensions/response-timer.ts
+  h_51bd2d183e5a5b 1-187
+.pi/extensions/rewind-claude/README.md
+  h_51bd2d183e5a5b 1-47
+.pi/extensions/rewind-claude/core.test.ts
+  h_51bd2d183e5a5b 1-538
+.pi/extensions/rewind-claude/core.ts
+  h_51bd2d183e5a5b 1-671
+.pi/extensions/rewind-claude/double-escape-editor.test.ts
+  h_51bd2d183e5a5b 1-118
+.pi/extensions/rewind-claude/double-escape-editor.ts
+  h_51bd2d183e5a5b 1-164
+.pi/extensions/rewind-claude/fork-model.test.ts
+  h_51bd2d183e5a5b 1-71
+.pi/extensions/rewind-claude/fork-model.ts
+  h_51bd2d183e5a5b 1-52
+.pi/extensions/rewind-claude/index.test.ts
+  h_51bd2d183e5a5b 1-57
+.pi/extensions/rewind-claude/index.ts
+  h_51bd2d183e5a5b 1-448
+.pi/extensions/rewind-claude/interaction.test.ts
+  h_51bd2d183e5a5b 1-146
+.pi/extensions/rewind-claude/interaction.ts
+  h_51bd2d183e5a5b 1-145
+.pi/extensions/rewind-claude/menu-model.test.ts
+  h_51bd2d183e5a5b 1-27
+.pi/extensions/rewind-claude/menu-model.ts
+  h_51bd2d183e5a5b 1-47
+.pi/extensions/rewind-claude/menu.test.ts
+  h_51bd2d183e5a5b 1-267
+.pi/extensions/rewind-claude/menu.ts
+  h_51bd2d183e5a5b 1-329
+.pi/extensions/rewind-claude/package.json
+  h_51bd2d183e5a5b 1-8
+AGENTS.md
+  h_51bd2d183e5a5b 1-34
+package.json
+  h_51bd2d183e5a5b 1-34
+tests/claude-codemode.test.ts
+  h_51bd2d183e5a5b 1-319
+tests/claude-edit.test.ts
+  h_51bd2d183e5a5b 1-127
+tests/claude-style.test.ts
+  h_51bd2d183e5a5b 1-326
+tests/claude-write.test.ts
+  h_51bd2d183e5a5b 1-95
+tests/codex-conversation-logger.test.ts
+  h_51bd2d183e5a5b 1-92
+tests/conversation-logger.test.ts
+  h_51bd2d183e5a5b 1-257
+tests/custom-status-bar.test.ts
+  h_51bd2d183e5a5b 1-171
+tests/extension-deduplication.test.ts
+  h_51bd2d183e5a5b 1-75
+tests/extension-entrypoints.test.ts
+  h_51bd2d183e5a5b 1-29
+tests/model-collaboration-diagnostics.test.ts
+  h_51bd2d183e5a5b 1-46
+tests/model-collaboration-panel.test.ts
+  h_51bd2d183e5a5b 1-65
+tests/model-collaboration-progress.test.ts
+  h_51bd2d183e5a5b 1-48
+tests/model-collaboration-retry.test.ts
+  h_51bd2d183e5a5b 1-107
+tests/model-collaboration.test.ts
+  h_51bd2d183e5a5b 1-179
+tests/model-thinking-memory.test.ts
+  h_51bd2d183e5a5b 1-291
+tests/response-timer.test.ts
+  h_51bd2d183e5a5b 1-253
+tests/rewind-claude.e2e.test.ts
+  h_51bd2d183e5a5b 1-155
+tsconfig.json
+  h_51bd2d183e5a5b 1-13
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c84f89c88d015e797959f7786d7e713d12ce93bf",
+  "prompts": {},
+  "humans": {
+    "h_51bd2d183e5a5b": {
+      "author": "fangzc1 <fangzc1@lenovo.com>"
+    }
+  },
+  "sessions": {
+    "s_98f85865bbd0d2": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a20637-e770-771a-a65c-72e02ee79122",
+        "model": "deepseek-flash"
+      },
+      "human_author": "fangzc1 <fangzc1@lenovo.com>"
+    }
+  }
+}
