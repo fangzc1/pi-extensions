@@ -1,0 +1,39 @@
+README.md
+  s_924fbd27e78169::t_6202e12a9cd623 131
+  s_12affa63f78389::t_37857b3b122612 3,5,7,9-11,13-19,21,23,27,29,31-33,35,37,39,46,52-54,56,58-60,62,66,70,74,77,81,85,89,93,95-98,100,104,112,114,116,118-122,124,126,130,132-138,141,144-146,149,151,153-156,158,160-161
+  s_12affa63f78389::t_e10e31352dc7df 25
+package.json
+  s_924fbd27e78169::t_4a55c3409806cc 18
+README.zh-CN.md
+  s_12affa63f78389::t_5a5c9172dd152c 1-161
+tests/auto-session-name.test.ts
+  s_924fbd27e78169::t_706b752f4aa94a 27
+  s_924fbd27e78169::t_f0c469bf52d463 1-19,22-26,28-495
+  s_924fbd27e78169::t_5d6b4d840b4cbf 20-21
+.pi/extensions/auto-session-name.ts
+  s_924fbd27e78169::t_f0c469bf52d463 1-339
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a6a46ef36ecb9e7f15abea6db4fda29d547d51db",
+  "prompts": {},
+  "sessions": {
+    "s_12affa63f78389": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a20640-adf8-77cf-b981-4b758581bea5",
+        "model": "deepseek-flash"
+      },
+      "human_author": "fangzc1 <fangzc1@lenovo.com>"
+    },
+    "s_924fbd27e78169": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a20635-349a-741c-ba83-4c2e52aa4eec",
+        "model": "deepseek-flash"
+      },
+      "human_author": "fangzc1 <fangzc1@lenovo.com>"
+    }
+  }
+}
