@@ -15,6 +15,7 @@
         "extensions": [
             "./.pi/extensions/claude-style/index.ts",
             "./.pi/extensions/custom-status-bar.ts",
+            "./.pi/extensions/auto-session-name.ts",
             "./.pi/extensions/response-timer.ts",
             "./.pi/extensions/conversation-logger.ts",
             "./.pi/extensions/model-thinking-memory.ts",

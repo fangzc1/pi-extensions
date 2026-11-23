@@ -1,101 +1,107 @@
 # pi-extensions
 
-Pi coding agent 的扩展集合（npm 包名 `pi-timer`），用一个仓库提供 Claude Code 风格的工具渲染、响应计时、状态栏定制、思考等级记忆、对话存档、多模型协作和会话回退。
+English | [简体中文](README.zh-CN.md)
 
-没有构建步骤：Pi 直接加载 `.pi/extensions/` 下的 TypeScript 源码，改完执行 `/reload` 即生效。
+A collection of extensions for the Pi coding agent (npm package name `pi-timer`). One repository covers Claude Code-style tool rendering, response timing, a custom status bar, per-model thinking-level memory, conversation archiving, multi-model collaboration, and session rewind.
 
-## 扩展一览
+There is no build step: Pi loads the TypeScript sources under `.pi/extensions/` directly, and `/reload` picks up changes.
 
-| 入口 | 作用 | 交互方式 |
+## Extensions
+
+| Entry point | What it does | How it activates |
 | --- | --- | --- |
-| `.pi/extensions/claude-style/index.ts` | 接管 `read`、`bash`、`grep`、`find`、`ls`、`edit`、`write`（Windows 追加 `powershell`）的渲染，并提供 codemode 结果视图 | 自动生效 |
-| `.pi/extensions/response-timer.ts` | 每轮对话计时：运行中显示 `⠼ Working...`，结束后写入 `Done: Xs` | 自动生效 |
-| `.pi/extensions/custom-status-bar.ts` | 自定义 footer：模型与思考等级、上下文窗口、项目、Git 分支、Context 占用率、Pi home 与会话 ID | 自动生效 |
-| `.pi/extensions/model-thinking-memory.ts` | 按模型记住上一次的 thinking level，新会话与 fork 时恢复上次模型与等级 | 自动生效 |
-| `.pi/extensions/conversation-logger.ts` | 每轮把用户与助手文本保存为 Markdown | 自动生效 |
-| `.pi/extensions/model-collaboration/index.ts` | 注册 `subagent` 工具做多模型协作，`/subagent-models` 配置子模型 | 工具调用 + 斜杠命令 |
-| `.pi/extensions/rewind-claude/index.ts` | Claude Code Rewind 风格的代码/会话回退 | `/rewind-claude`、空输入连按两次 `Esc` |
+| `.pi/extensions/claude-style/index.ts` | Takes over rendering for `read`, `bash`, `grep`, `find`, `ls`, `edit`, and `write` (plus `powershell` on Windows), and adds a codemode result view | Automatic |
+| `.pi/extensions/response-timer.ts` | Times each turn: renders `⠼ Working...` while running and appends `Done: Xs` when finished | Automatic |
+| `.pi/extensions/custom-status-bar.ts` | Custom footer: model and thinking level, context window, project, Git branch, context usage, Pi home, and session ID | Automatic |
+| `.pi/extensions/model-thinking-memory.ts` | Remembers the last thinking level per model; restores the previous model and level on new sessions and forks | Automatic |
+| `.pi/extensions/conversation-logger.ts` | Saves the user and assistant text of every turn as Markdown | Automatic |
+| `.pi/extensions/model-collaboration/index.ts` | Registers the `subagent` tool for multi-model work; `/subagent-models` configures submodels | Tool call + slash command |
+| `.pi/extensions/rewind-claude/index.ts` | Claude Code-style rewind of code and conversation | `/rewind-claude`, double `Esc` on an empty input |
 
-除 `custom-status-bar` 外，其余扩展都带防重复注册逻辑，同一进程内被加载多次只会注册一次。
+Every extension except `custom-status-bar` guards against duplicate registration, so loading the same extension more than once in a process registers it only once.
 
-## 安装与启用
+## Installation and activation
 
-扩展依赖 Pi 运行环境提供的 `@earendil-works/pi-ai` 和 `@earendil-works/pi-coding-agent`（见 `package.json` 的 `peerDependencies`），不需要单独安装。源码中的 `.ts` 由 Node.js 原生执行，开发验证环境为 Node.js 24.22.2。
+Extensions rely on `@earendil-works/pi-ai` and `@earendil-works/pi-coding-agent` supplied by the Pi runtime (see `peerDependencies`), so no separate installation is required. Pi executes the `.ts` sources natively; development was verified on Node.js 24.22.2.
 
-### 项目内启用（推荐）
+### Project-local (recommended)
 
-本仓库自身就是可运行的 Pi 项目。在仓库目录启动 Pi，项目受信任后会自动发现 `.pi/extensions/` 下的扩展：
+This repository is itself a runnable Pi project. Start Pi in the repository and, once the project is trusted, Pi discovers the extensions under `.pi/extensions/`:
 
-1. 在仓库根目录启动 `pi`。
-2. 首次进入时确认项目受信任。
-3. 修改扩展后在会话内执行 `/reload`。
+1. Run `pi` from the repository root.
+2. Confirm the project trust prompt on first entry.
+3. Run `/reload` in the session after changing an extension.
 
-要在其他项目复用，把需要的文件或目录复制（或软链接）到该项目的 `.pi/extensions/`；单文件扩展是 `<name>.ts`，带多文件的扩展是 `<name>/index.ts`。
+To reuse an extension in another project, copy (or symlink) the needed files or directories into that project's `.pi/extensions/`. A single-file extension is `<name>.ts`; a multi-file extension is `<name>/index.ts`.
 
-### 全局启用
+### Global
 
-放到 Pi 全局扩展目录，对所有项目生效：
+Place extensions in Pi's global extension directory to enable them for every project:
 
 ```text
 ~/.pi/agent/extensions/<name>.ts
 ~/.pi/agent/extensions/<name>/index.ts
 ```
 
-### 临时试用
+### Trying an extension ad hoc
 
 ```bash
 pi -e ./.pi/extensions/response-timer.ts
 ```
 
-`-e` 只加载单个扩展且不支持热重载，适合验证改动。
+`-e` loads one extension and does not support hot reload, which makes it useful for verifying a change.
 
-### 不通过 `pi install` 安装
+### Installing as a Pi package
 
-`package.json` 的 `pi.extensions` 已与 `.pi/extensions/` 下的实际入口一一对应，包方式安装与项目内自动加载启用同一组扩展。
+The `pi.extensions` field in `package.json` matches the entry points under `.pi/extensions/`, so installing the repository as a package enables the same set of extensions as project-local discovery:
 
-## 各扩展说明
+```bash
+pi install /path/to/pi-extensions
+```
+
+## Extension details
 
 ### claude-style
 
-复刻 Claude Code 的工具调用展示：工具标题、参数摘要、结果折叠与展开、错误配色。实现方式是包装 Pi 原生工具定义，只替换 `renderCall` / `renderResult`，执行逻辑与结果数据仍是原生实现。codemode 视图额外展示脚本摘要、嵌套调用、多模型调用成本合计，以及超宽内容与图片的降级表现。
+Recreates the Claude Code tool-call presentation: tool titles, argument summaries, collapsible results, and error coloring. It wraps Pi's native tool definitions and replaces only `renderCall` / `renderResult`, so execution and result data stay native. The codemode view additionally shows the script summary, nested calls, aggregated cost across model calls, and graceful degradation for over-wide content and images.
 
 ### response-timer
 
-用 `agent_start` / `agent_settled` 保证一轮只统计一次。运行中隐藏 Pi 内建的 Working 行，改为在编辑器顶部渲染计时行；完成后把耗时写入会话历史，可用于事后核对每轮真实耗时。
+`agent_start` / `agent_settled` guarantee one measurement per turn. While a turn runs, Pi's built-in Working line is hidden and a timing line renders above the editor; when the turn finishes, the duration is written to session history for later inspection.
 
 ### custom-status-bar
 
-通过 `ctx.ui.setFooter` 接管底栏，格式为：
+Takes over the footer through `ctx.ui.setFooter` and renders:
 
 ```text
-模型[等级] 128k · 项目 · 分支 · Context 42% used
+model-id[level] 128k · project · branch · Context 42% used
 pi-home:~/.pi/agent(session-id)
 ```
 
-固定使用 ANSI 亮色与 Nerd Font 图标，不随 Pi 主题变化；宽内容会按终端宽度换行。
+Colors use fixed bright ANSI values and Nerd Font icons, so the bar ignores Pi themes; wide content wraps to the terminal width.
 
 ### model-thinking-memory
 
-`thinking_level_select` 时落盘，`model_select` 与 `session_start` 时恢复。没有任何历史记录时完全交给 Pi 的默认值与能力 clamp，因此不会覆盖 Pi 自身策略。存储文件损坏会提示告警而不是中断会话。
+Persists the level on `thinking_level_select` and restores it on `model_select` and `session_start`. With no history it defers entirely to Pi's defaults and capability clamping, so it never overrides Pi's own policy. A corrupted store raises a warning instead of interrupting the session.
 
 ### conversation-logger
 
-只在 `turn_end` 且本轮不再调用工具（`stopReason !== "toolUse"`）时写入，内容仅包含纯文本，剔除思考、工具调用和内部注入标记。文件名为 `<YYYY-MM-DD-HHmmss>_<前 20 个字符>_<md5 前 6 位>.md`，用 `wx` 原子写入，同名时追加 `_2`、`_3` 后缀。
+Writes only on `turn_end`, and only when the turn stops calling tools (`stopReason !== "toolUse"`). The output contains plain text only; thinking, tool calls, and internal injected markers are filtered out. File names follow `<YYYY-MM-DD-HHmmss>_<first 20 chars>_<first 6 chars of md5>.md` and are written atomically with `wx`, appending `_2`, `_3` suffixes on collision.
 
 ### model-collaboration
 
-主模型通过 `subagent` 工具把任务交给另一个模型：
+The main model hands work to another model through the `subagent` tool:
 
-- `access: "read"` 只读评审与调研；`access: "write"` 可修改项目并执行命令，调用前必须经用户确认，且取消或失败不会回滚。
-- 子模型使用主会话的认证信息，不复制也不持久化凭据。
-- 结果超过 50KB 或 2000 行时截断，完整内容写入临时文件。
-- 失败时保存脱敏诊断，便于定位是网络重试还是模型侧问题。
+- `access: "read"` covers reviews and research; `access: "write"` lets the submodel modify the project and run commands, requires user confirmation before the call, and leaves changes in place when the call is cancelled or fails.
+- The submodel reuses the main session's credentials; nothing is copied or persisted.
+- Results over 50KB or 2000 lines are truncated, with the full text written to a temporary file.
+- Failures write a redacted diagnostic log that separates network retries from model-side errors.
 
-`/subagent-models` 打开配置面板，设置默认子模型和每个模型的思考等级。模型解析顺序为已有 thread 的模型 → 配置的默认模型 → 主会话模型；思考等级优先沿用 thread，其次按模型配置，最后回退到 scoped 配置或模型支持的默认等级。
+`/subagent-models` opens a configuration panel for the default submodel and per-model thinking levels. Models resolve in this order: the existing thread's model, the configured default, then the main session model. The thinking level prefers the thread, then the per-model setting, then the scoped setting or the model's supported default.
 
 ### rewind-claude
 
-`/rewind-claude` 或空输入连按两次 `Esc`（输入框非空时双击 `Esc` 会保存并清空草稿，之后按 `↑` 恢复）。支持从任意历史 prompt 创建检查点，动作包括：
+Run `/rewind-claude`, or press `Esc` twice on an empty input (with text in the input, the double `Esc` saves and clears the draft; press `↑` to restore it). Any earlier prompt can become a checkpoint, with these actions:
 
 - Restore code and conversation
 - Restore conversation
@@ -103,53 +109,53 @@ pi-home:~/.pi/agent(session-id)
 - Summarize from here / Summarize up to here
 - Never mind
 
-检查点只追踪 Pi 的 `edit` 和 `write` 工具，不覆盖 Bash、外部编辑器、符号链接或硬链接的改动。会话恢复会创建真正的 Pi Fork Session，并继承 Fork 前的模型与 thinking level。细节见 [.pi/extensions/rewind-claude/README.md](.pi/extensions/rewind-claude/README.md)。
+Checkpoints track only Pi's `edit` and `write` tools; Bash, external editors, symlinks, and hard links are out of scope. Restoring a session creates a real Pi Fork Session and keeps the model and thinking level from before the fork. See [.pi/extensions/rewind-claude/README.md](.pi/extensions/rewind-claude/README.md) for details.
 
-## 数据与配置位置
+## Data and configuration locations
 
-| 数据 | 位置 | 产出者 |
+| Data | Location | Produced by |
 | --- | --- | --- |
-| 对话日志 | `<项目>/.pi/logs/` | conversation-logger |
-| 模型思考等级记忆 | `<Pi agent 目录>/model-thinking-levels.json` | model-thinking-memory |
-| 子模型配置 | `<Pi agent 目录>/subagent-models.json` | model-collaboration |
-| 协作诊断日志 | `<Pi agent 目录>/model-collaboration-diagnostics/<sessionId>.jsonl` | model-collaboration |
-| Rewind 检查点 | `<会话文件>.rewind-claude/`（`manifest.json` + `blobs/`，最多 100 个检查点）；无会话文件时落在临时目录 | rewind-claude |
+| Conversation logs | `<project>/.pi/logs/` | conversation-logger |
+| Per-model thinking levels | `<Pi agent directory>/model-thinking-levels.json` | model-thinking-memory |
+| Submodel configuration | `<Pi agent directory>/subagent-models.json` | model-collaboration |
+| Collaboration diagnostics | `<Pi agent directory>/model-collaboration-diagnostics/<sessionId>.jsonl` | model-collaboration |
+| Rewind checkpoints | `<session file>.rewind-claude/` (`manifest.json` + `blobs/`, up to 100 checkpoints); falls back to a temporary directory when there is no session file | rewind-claude |
 
-`<Pi agent 目录>` 即 `getAgentDir()` 的返回值，默认 `~/.pi/agent`。
+`<Pi agent directory>` is whatever `getAgentDir()` returns, by default `~/.pi/agent`.
 
-## 目录结构
+## Repository layout
 
 ```text
 .
-├── .pi/extensions/           # 扩展源码，Pi 直接加载
-│   ├── *.ts                  # 单文件扩展：计时、日志、状态栏、思考等级记忆
-│   ├── claude-style/         # Claude Code 风格工具渲染与 codemode 视图
-│   ├── model-collaboration/  # subagent 工具、配置面板、进度与诊断
-│   └── rewind-claude/        # /rewind-claude 命令、检查点存储与交互
-├── tests/                    # 顶层扩展的行为测试
-├── docs/                     # 设计稿与模块文档
-├── package.json              # Pi 包清单与脚本
-└── tsconfig.json             # 严格模式类型检查配置
+├── .pi/extensions/           # extension sources, loaded directly by Pi
+│   ├── *.ts                  # single-file extensions: timer, logger, status bar, thinking memory, session naming
+│   ├── claude-style/         # Claude Code-style tool rendering and codemode view
+│   ├── model-collaboration/  # subagent tool, config panel, progress, diagnostics
+│   └── rewind-claude/        # /rewind-claude command, checkpoint store, interaction
+├── tests/                    # behavior tests for top-level extensions
+├── docs/                     # design notes and module docs
+├── package.json              # Pi package manifest and scripts
+└── tsconfig.json             # strict type-check configuration
 ```
 
-## 开发
+## Development
 
 ```bash
-npm test                            # 顶层测试 + Rewind 测试
-npm run typecheck                   # 严格类型检查（需本地可用的 tsc）
-cd .pi/extensions/rewind-claude && npm test   # 只跑 Rewind 测试
+npm test                            # top-level tests + Rewind tests
+npm run typecheck                   # strict type checking (needs a local tsc)
+cd .pi/extensions/rewind-claude && npm test   # Rewind tests only
 ```
 
-`typescript` 与 `@types/node` 已声明为 `devDependencies`，`npm install` 后即可直接执行 `npm run typecheck`。
+`typescript` and `@types/node` are declared in `devDependencies`, so `npm run typecheck` works after `npm install`.
 
-约定：
+Conventions:
 
-- 四个空格缩进、双引号、分号，ESM 导入显式带 `.ts` 后缀。
-- 测试使用 Node 内置 `node:test` 与 `node:assert/strict`，文件名 `*.test.ts`。
-- 顶层通用行为测试放 `tests/`，特性内部测试与实现同目录（`rewind-claude`）。
-- 涉及文件或 TUI 的行为，用临时目录断言渲染输出或落盘结果，不断言实现细节。
+- Four spaces, double quotes, semicolons; ESM imports carry the explicit `.ts` extension.
+- Tests use Node's built-in `node:test` and `node:assert/strict`, with `*.test.ts` file names.
+- Shared top-level behavior tests live in `tests/`; feature-internal tests sit next to their implementation (`rewind-claude`).
+- For file or TUI behavior, assert rendered output or persisted results in temporary directories instead of implementation details.
 
-## 已知限制
+## Known limitations
 
-- **Summarize up to here 的边界**：会话短到 Pi 返回 `Nothing to compact (session too small)` 时，`session_before_compact` 不会触发，该动作会报错且不修改会话。
-- **与旧扩展共存**：若同时启用 `@ayulab/pi-rewind`，会话恢复时旧扩展仍会弹出 `Sync files?`；需要单一 Claude Code 风格交互时，在 Pi `packages` 配置中停用它。
+- **`Summarize up to here` boundary**: when a session is short enough that Pi returns `Nothing to compact (session too small)`, the `session_before_compact` hook never fires, so the action reports an error and leaves the session unchanged.
+- **Coexistence with the older extension**: if `@ayulab/pi-rewind` is also enabled, restoring a session still prompts `Sync files?`. For a single Claude Code-style interaction, disable it in Pi's `packages` configuration.
