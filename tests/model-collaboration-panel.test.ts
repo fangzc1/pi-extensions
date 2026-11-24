@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { Theme } from "@earendil-works/pi-coding-agent";
 import { visibleWidth } from "@earendil-works/pi-tui";
-import { ModelPanel, type ModelOption } from "../.pi/extensions/model-collaboration/model-panel.ts";
-import type { Config } from "../.pi/extensions/model-collaboration/core.ts";
+import { ModelPanel, type ModelOption } from "../.pi/extensions/model-delegation/model-panel.ts";
+import type { Config } from "../.pi/extensions/model-delegation/core.ts";
 
 const theme = { fg: (_color: string, text: string) => text } as Theme;
 const models: ModelOption[] = [

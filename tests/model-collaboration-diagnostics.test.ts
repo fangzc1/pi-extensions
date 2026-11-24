@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { createAssistantMessageEventStream, type AssistantMessage, type StreamOptions } from "@earendil-works/pi-ai";
 import { getModel } from "@earendil-works/pi-ai/compat";
-import { RequestDiagnostics, errorFacts } from "../.pi/extensions/model-collaboration/diagnostics.ts";
+import { RequestDiagnostics, errorFacts } from "../.pi/extensions/model-delegation/diagnostics.ts";
 
 const model = getModel("anthropic", "claude-sonnet-4-5")!;
 test("诊断保留原事件流、状态与时间，不保存密钥、正文、响应头或原始异常", async () => {

@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { createAssistantMessageEventStream, type AssistantMessage } from "@earendil-works/pi-ai";
 import { getModel } from "@earendil-works/pi-ai/compat";
 import type { ExtensionAPI, ExtensionToolContext, ToolDefinition } from "@earendil-works/pi-coding-agent";
-import extension from "../.pi/extensions/model-collaboration/index.ts";
+import extension from "../.pi/extensions/model-delegation/index.ts";
 
 const socketError = "terminated: other side closed (UND_ERR_SOCKET)";
 

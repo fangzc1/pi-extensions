@@ -19,7 +19,7 @@
             "./.pi/extensions/response-timer.ts",
             "./.pi/extensions/conversation-logger.ts",
             "./.pi/extensions/model-thinking-memory.ts",
-            "./.pi/extensions/model-collaboration/index.ts",
+            "./.pi/extensions/model-delegation/index.ts",
             "./.pi/extensions/rewind-claude/index.ts"
         ]
     },

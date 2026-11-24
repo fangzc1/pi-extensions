@@ -2,7 +2,7 @@
 
 [English](README.md) | 简体中文
 
-Pi coding agent 的扩展集合（npm 包名 `pi-timer`），用一个仓库提供 Claude Code 风格的工具渲染、响应计时、状态栏定制、思考等级记忆、对话存档、多模型协作和会话回退。
+Pi coding agent 的扩展集合（npm 包名 `pi-timer`），用一个仓库提供 Claude Code 风格的工具渲染、响应计时、状态栏定制、思考等级记忆、对话存档、模型委派和会话回退。
 
 没有构建步骤：Pi 直接加载 `.pi/extensions/` 下的 TypeScript 源码，改完执行 `/reload` 即生效。
 
@@ -15,7 +15,7 @@ Pi coding agent 的扩展集合（npm 包名 `pi-timer`），用一个仓库提�
 | `.pi/extensions/custom-status-bar.ts` | 自定义 footer：模型与思考等级、上下文窗口、项目、Git 分支、Context 占用率、Pi home 与会话 ID | 自动生效 |
 | `.pi/extensions/model-thinking-memory.ts` | 按模型记住上一次的 thinking level，新会话与 fork 时恢复上次模型与等级 | 自动生效 |
 | `.pi/extensions/conversation-logger.ts` | 每轮把用户与助手文本保存为 Markdown | 自动生效 |
-| `.pi/extensions/model-collaboration/index.ts` | 注册 `subagent` 工具做多模型协作，`/subagent-models` 配置子模型 | 工具调用 + 斜杠命令 |
+| `.pi/extensions/model-delegation/index.ts` | 注册 `delegate_to_model` 工具做模型委派，`/model-delegation-config` 配置子模型 | 工具调用 + 斜杠命令 |
 | `.pi/extensions/rewind-claude/index.ts` | Claude Code Rewind 风格的代码/会话回退 | `/rewind-claude`、空输入连按两次 `Esc` |
 
 除 `custom-status-bar` 外，其余扩展都带防重复注册逻辑，同一进程内被加载多次只会注册一次。
@@ -88,16 +88,18 @@ pi-home:~/.pi/agent(session-id)
 
 只在 `turn_end` 且本轮不再调用工具（`stopReason !== "toolUse"`）时写入，内容仅包含纯文本，剔除思考、工具调用和内部注入标记。文件名为 `<YYYY-MM-DD-HHmmss>_<前 20 个字符>_<md5 前 6 位>.md`，用 `wx` 原子写入，同名时追加 `_2`、`_3` 后缀。
 
-### model-collaboration
+### 模型委派（model-delegation）
 
-主模型通过 `subagent` 工具把任务交给另一个模型：
+原工具 `subagent` 和命令 `/subagent-models` 已更名为 `delegate_to_model` 和 `/model-delegation-config`，不保留旧接口别名。配置文件与诊断目录沿用原路径，无需迁移。
+
+主模型通过 `delegate_to_model` 工具把任务交给另一个模型：
 
 - `access: "read"` 只读评审与调研；`access: "write"` 可修改项目并执行命令，调用前必须经用户确认，且取消或失败不会回滚。
 - 子模型使用主会话的认证信息，不复制也不持久化凭据。
 - 结果超过 50KB 或 2000 行时截断，完整内容写入临时文件。
 - 失败时保存脱敏诊断，便于定位是网络重试还是模型侧问题。
 
-`/subagent-models` 打开配置面板，设置默认子模型和每个模型的思考等级。模型解析顺序为已有 thread 的模型 → 配置的默认模型 → 主会话模型；思考等级优先沿用 thread，其次按模型配置，最后回退到 scoped 配置或模型支持的默认等级。
+`/model-delegation-config` 打开配置面板，设置默认子模型和每个模型的思考等级。模型解析顺序为已有 thread 的模型 → 配置的默认模型 → 主会话模型；思考等级优先沿用 thread，其次按模型配置，最后回退到 scoped 配置或模型支持的默认等级。
 
 ### rewind-claude
 
@@ -117,8 +119,8 @@ pi-home:~/.pi/agent(session-id)
 | --- | --- | --- |
 | 对话日志 | `<项目>/.pi/logs/` | conversation-logger |
 | 模型思考等级记忆 | `<Pi agent 目录>/model-thinking-levels.json` | model-thinking-memory |
-| 子模型配置 | `<Pi agent 目录>/subagent-models.json` | model-collaboration |
-| 协作诊断日志 | `<Pi agent 目录>/model-collaboration-diagnostics/<sessionId>.jsonl` | model-collaboration |
+| 子模型配置 | `<Pi agent 目录>/subagent-models.json` | model-delegation |
+| 协作诊断日志 | `<Pi agent 目录>/model-collaboration-diagnostics/<sessionId>.jsonl` | model-delegation |
 | Rewind 检查点 | `<会话文件>.rewind-claude/`（`manifest.json` + `blobs/`，最多 100 个检查点）；无会话文件时落在临时目录 | rewind-claude |
 
 `<Pi agent 目录>` 即 `getAgentDir()` 的返回值，默认 `~/.pi/agent`。
@@ -130,7 +132,7 @@ pi-home:~/.pi/agent(session-id)
 ├── .pi/extensions/           # 扩展源码，Pi 直接加载
 │   ├── *.ts                  # 单文件扩展：计时、日志、状态栏、思考等级记忆
 │   ├── claude-style/         # Claude Code 风格工具渲染与 codemode 视图
-│   ├── model-collaboration/  # subagent 工具、配置面板、进度与诊断
+│   ├── model-delegation/     # delegate_to_model 工具、配置面板、进度与诊断
 │   └── rewind-claude/        # /rewind-claude 命令、检查点存储与交互
 ├── tests/                    # 顶层扩展的行为测试
 ├── docs/                     # 设计稿与模块文档

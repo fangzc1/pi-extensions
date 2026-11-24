@@ -27,8 +27,10 @@ export function errorFacts(error: unknown): { name?: string; codes: string[]; ca
 export class RequestDiagnostics {
     readonly path: string;
     private writeFailed = false;
-    constructor(path: string, privateSink?: (record: Record<string, unknown>) => void) {
+    private readonly taskId?: string;
+    constructor(path: string, privateSink?: (record: Record<string, unknown>) => void, taskId?: string) {
         this.path = path;
+        this.taskId = taskId;
         this.sink = privateSink ?? ((record) => {
             mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
             appendFileSync(path, `${JSON.stringify(record)}\n`, { mode: 0o600 });
@@ -90,7 +92,7 @@ export class RequestDiagnostics {
     }
 
     private record(fields: Record<string, unknown>): void {
-        try { this.sink({ timestamp: new Date().toISOString(), ...fields }); }
+        try { this.sink({ timestamp: new Date().toISOString(), taskId: this.taskId, ...fields }); }
         catch { this.writeFailed = true; /* 诊断写入失败不能中断模型任务。 */ }
     }
 }

@@ -6,9 +6,9 @@ import { createAssistantMessageEventStream } from "@earendil-works/pi-ai";
 import { getModel } from "@earendil-works/pi-ai/compat";
 import { visibleWidth } from "@earendil-works/pi-tui";
 import type { ExtensionAPI, ExtensionToolContext, ToolDefinition } from "@earendil-works/pi-coding-agent";
-import extension from "../.pi/extensions/model-collaboration/index.ts";
+import extension from "../.pi/extensions/model-delegation/index.ts";
 import { join } from "node:path";
-import { ConfigStore, resolveModel, Collaboration, toolsForAccess } from "../.pi/extensions/model-collaboration/core.ts";
+import { ConfigStore, resolveModel, Collaboration, toolsForAccess } from "../.pi/extensions/model-delegation/core.ts";
 
 const models = [{ provider: "p", id: "a" }, { provider: "p", id: "b" }, { provider: "q", id: "b" }];
 test("模型完整名、唯一简写、歧义、越界与默认值均经过校验", () => {
@@ -74,7 +74,7 @@ test("线程保留历史、串行互斥、取消传递和释放", async () => {
     await assert.rejects(collaboration.run({ model: "p/b", level: "high", access: "read", task: "x", threadId: first.threadId }), /模型/);
     const controller = new AbortController();
     const running = collaboration.run({ model: "p/a", level: "high", access: "read", task: "wait", threadId: first.threadId }, controller.signal);
-    await assert.rejects(collaboration.run({ model: "p/a", level: "high", access: "read", task: "x" }), /正在执行/);
+    await assert.rejects(collaboration.run({ model: "p/a", level: "high", access: "read", task: "x", threadId: first.threadId }), /正在执行/);
     controller.abort();
     await assert.rejects(running, /取消/);
     assert.equal(cancelled, true);
@@ -82,6 +82,46 @@ test("线程保留历史、串行互斥、取消传递和释放", async () => {
     await collaboration.clear();
     assert.throws(() => collaboration.describe(first.threadId), /失效/);
     assert.equal(disposed, 1);
+});
+
+test("提示词与工具描述要求明确委派，普通实施授权不等于模型委派授权", async () => {
+    const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
+    process.env.PI_CODING_AGENT_DIR = mkdtempSync(join(tmpdir(), "pi-collab-policy-"));
+    let tool: ToolDefinition | undefined;
+    const commands: string[] = [];
+    let beforeStart: ((event: { systemPrompt: string }, ctx: ExtensionToolContext) => Promise<{ systemPrompt: string }>) | undefined;
+    let shutdown: (() => Promise<void>) | undefined;
+    extension({
+        registerCommand(name: string) { commands.push(name); },
+        registerTool(definition: ToolDefinition) { tool = definition; },
+        on(name: string, handler: unknown) {
+            if (name === "before_agent_start") beforeStart = handler as typeof beforeStart;
+            if (name === "session_shutdown") shutdown = handler as typeof shutdown;
+        },
+    } as unknown as ExtensionAPI);
+    try {
+        const { systemPrompt } = await beforeStart!({ systemPrompt: "原始系统规则" }, {
+            scopedModels: [{ model: models[0] }, { model: models[1] }],
+        } as unknown as ExtensionToolContext);
+        assert.equal(tool?.name, "delegate_to_model");
+        assert.equal(tool?.label, "模型委派");
+        assert.deepEqual(commands, ["model-delegation-config"]);
+        assert.ok(systemPrompt.includes("调用 delegate_to_model"));
+        assert.ok(!systemPrompt.includes("调用 subagent"));
+        assert.ok(systemPrompt.startsWith("原始系统规则\n\n"));
+        assert.ok(systemPrompt.includes("仅当用户明确要求其他模型或子模型参与时，才允许调用 delegate_to_model"));
+        assert.ok(systemPrompt.includes("普通的“实施、继续、修改、检查、评审”等指令仅授权主会话执行，不构成模型委派授权"));
+        assert.ok(systemPrompt.includes("不得因任务复杂、适合并行或已配置默认模型而自行委派"));
+        assert.ok(systemPrompt.includes("用户明确委派但未指定模型时省略 model"));
+        assert.ok(systemPrompt.includes("子模型写权限确认不能替代委派授权"));
+        assert.ok(systemPrompt.includes("可用模型：p/a, p/b"));
+        assert.ok(tool?.description.includes("仅用于用户明确要求其他模型或子模型参与的任务"));
+        assert.ok(tool?.description.includes("普通实施、继续、修改、检查或评审指令不构成委派授权，禁止自主委派"));
+    } finally {
+        await shutdown?.();
+        if (originalAgentDir === undefined) delete process.env.PI_CODING_AGENT_DIR;
+        else process.env.PI_CODING_AGENT_DIR = originalAgentDir;
+    }
 });
 
 test("真实 SDK 子会话复用主 registry，隔离协作工具并连续追问", async () => {
@@ -107,7 +147,7 @@ test("真实 SDK 子会话复用主 registry，隔离协作工具并连续追问
             async getProviderAuth() { return { auth: {}, source: "test" }; },
             streamSimple(selected: typeof model, context: { messages: unknown[]; tools?: { name: string }[] }) {
                 assert.equal(selected.id, model.id);
-                assert.ok(!context.tools?.some((item) => item.name === "subagent" || item.name === "bash"));
+                assert.ok(!context.tools?.some((item) => item.name === "delegate_to_model" || item.name === "bash"));
                 histories.push(context.messages.length);
                 const stream = createAssistantMessageEventStream();
                 const message = {
@@ -135,7 +175,7 @@ test("真实 SDK 子会话复用主 registry，隔离协作工具并连续追问
         },
     } as unknown as ExtensionToolContext;
     try {
-        assert.equal(tool?.executionMode, "sequential");
+        assert.notEqual(tool?.executionMode, "sequential");
         const updates: string[] = [];
         const first = await tool!.execute("1", { model: `${model.provider}/${model.id}`, access: "read", task: "评审" }, undefined,
             (update) => { updates.push(update.content.filter((block) => block.type === "text").map((block) => block.text).join("\n")); }, ctx);
@@ -151,8 +191,105 @@ test("真实 SDK 子会话复用主 registry，隔离协作工具并连续追问
         assert.ok(rendered.join("\n").includes("读取 missing-one.md"));
         assert.ok(rendered.join("\n").includes("失败"));
         const call = tool!.renderCall!({ model: "p/a", access: "read", task: "评审方案" }, theme as never, {} as never).render(40).join("\n");
-        assert.ok(call.includes("模型协作") && call.includes("评审方案"));
+        assert.ok(call.startsWith("● model-delegation(p/a · 只读)"));
+        assert.ok(call.split("\n")[1].includes("评审方案"));
+        assert.ok(!call.includes("模型委派"));
+        assert.equal(tool!.renderShell, "self");
         assert.ok(!call.includes('task='));
+        const longArgs = { model: "p/a", access: "read", task: "任务约束与验收。".repeat(100) };
+        const compactCall = tool!.renderCall!(longArgs, theme as never, { expanded: false } as never).render(40);
+        const expandedCall = tool!.renderCall!(longArgs, theme as never, { expanded: true } as never).render(40);
+        assert.equal(compactCall.length, 2);
+        assert.ok(expandedCall.length > compactCall.length);
+        assert.ok(compactCall.every((line) => visibleWidth(line) <= 40));
+        const hintContext = {
+            expanded: false,
+            keyHint(id: string, description: string) {
+                assert.equal(id, "app.tools.expand");
+                return `\x1b[31mAlt+E\x1b[0m\x1b[33m ${description}\x1b[0m`;
+            },
+        };
+        const hintedCall = tool!.renderCall!(longArgs, theme as never, hintContext as never).render(40).join("\n");
+        assert.ok(hintedCall.split("\n")[0].endsWith("Alt+E 展开详情"));
+        assert.equal(hintedCall.split("展开详情").length - 1, 1);
+        const hintColors: string[] = [];
+        const hintTheme = { fg: (color: string, text: string) => {
+            if (text.includes("Alt+E")) hintColors.push(color);
+            return text;
+        } };
+        tool!.renderCall!(longArgs, hintTheme as never, hintContext as never).render(80);
+        assert.deepEqual(hintColors, ["dim"]);
+        for (const isPartial of [true, false]) {
+            const hintedResult = tool!.renderResult!(first, { expanded: false, isPartial } as never, theme as never, hintContext as never).render(40);
+            assert.ok(!hintedResult.join("\n").includes("展开详情"));
+            assert.ok(hintedResult.every((line) => line.startsWith("  ")));
+            assert.ok(!hintedResult.join("\n").includes("Ctrl+O"));
+            const expandedResult = tool!.renderResult!(first, { expanded: true, isPartial } as never, theme as never, hintContext as never).render(40);
+            assert.ok(!expandedResult.join("\n").includes("展开详情"));
+            const narrowResult = tool!.renderResult!(first, { expanded: false, isPartial } as never, theme as never, hintContext as never).render(12);
+            assert.ok(narrowResult.every((line) => visibleWidth(line) <= 12));
+        }
+        const expandedHintCall = tool!.renderCall!(longArgs, theme as never, { ...hintContext, expanded: true } as never).render(40).join("\n");
+        assert.ok(!expandedHintCall.includes("展开详情"));
+        const narrowHintCall = tool!.renderCall!(longArgs, theme as never, hintContext as never).render(12);
+        assert.ok(narrowHintCall.every((line) => visibleWidth(line) <= 12));
+        const state = {};
+        const cardContext = { state, args: { task: "只读审查迁移", access: "read" } };
+        const titleColors: string[] = [];
+        const bulletColors: string[] = [];
+        const cardTheme = { fg: (color: string, text: string) => {
+            if (text.startsWith("model-delegation(") || text.startsWith("● model-delegation(")) titleColors.push(color);
+            if (text === "●") bulletColors.push(color);
+            return text;
+        } };
+        const card = tool!.renderCall!(cardContext.args, cardTheme as never, cardContext as never);
+        assert.ok(card.render(80).join("\n").startsWith("● model-delegation(默认模型 · 只读)\n  只读审查迁移"));
+        assert.equal(titleColors.at(-1), "toolTitle");
+        const partial = { content: [{ type: "text", text: "模型元信息\n旧摘要" }], details: {
+            model: "provider/haiku", level: "xhigh", access: "read",
+            currentLines: ["当前：执行工具（1 项） · 已完成 12 次工具调用", "● 搜索 deployment_mode", "最近说明：检查消费者"],
+            progress: { finishedTools: 12 }, progressLines: ["不应出现在折叠态的历史"],
+        } };
+        const runningCard = tool!.renderResult!(partial as never, { expanded: false, isPartial: true } as never, theme as never, cardContext as never).render(100).join("\n");
+        assert.ok(runningCard.startsWith("  ⎿ 搜索 deployment_mode"));
+        assert.ok(runningCard.includes("已完成 12 次工具调用"));
+        assert.ok(!runningCard.includes("不应出现在折叠态的历史"));
+        const runningHeader = card.render(100).join("\n");
+        assert.ok(runningHeader.startsWith("● model-delegation(provider/haiku · xhigh · 只读)\n  只读审查迁移"));
+        assert.ok(!runningCard.includes("haiku"));
+        const parallel = { ...partial, details: { ...partial.details, progress: {
+            finishedTools: 12, items: Array.from({ length: 8 }, () => ({ state: "running" })),
+        } } };
+        const parallelCard = tool!.renderResult!(parallel as never, { expanded: false, isPartial: true } as never, theme as never, cardContext as never).render(100).join("\n");
+        assert.ok(parallelCard.includes("另有 7 项工具正在执行"));
+        tool!.renderResult!(first, { expanded: false, isPartial: false } as never, theme as never, cardContext as never);
+        assert.ok(card.render(100).join("\n").startsWith(`● model-delegation(${model.provider}/${model.id} · medium · 只读)`));
+        assert.equal(titleColors.at(-1), "toolTitle");
+        assert.equal(bulletColors.at(-1), "success");
+        tool!.renderResult!({ content: [{ type: "text", text: "请求失败" }], details: { status: "失败" }, isError: true } as never,
+            { expanded: false, isPartial: false } as never, theme as never, cardContext as never);
+        const failedHeader = card.render(100).join("\n");
+        // 与 Bash/Read/Codemode 的失败指示色一致，仅圆点携带 ANSI 211。
+        assert.ok(failedHeader.startsWith("\u001b[38;5;211m●\u001b[39m model-delegation("));
+        assert.ok(card.render(100).join("\n").includes("\n  只读审查迁移"));
+        assert.equal(titleColors.at(-1), "toolTitle");
+        const failureColors: { color: string; text: string }[] = [];
+        const failureTheme = { fg: (color: string, text: string) => {
+            failureColors.push({ color, text });
+            return text;
+        } };
+        tool!.renderResult!({ content: [{ type: "text", text: "429 quota exceeded" }], details: { status: "失败" }, isError: true } as never,
+            { expanded: false, isPartial: false } as never, failureTheme as never, cardContext as never).render(100);
+        assert.ok(failureColors.some(({ color, text }) => color === "muted" && text.startsWith("⎿ 失败")));
+        assert.ok(failureColors.every(({ color }) => color !== "error"));
+        const compactResult = tool!.renderResult!(first, { expanded: false, isPartial: false } as never, theme as never, {} as never).render(40).join("\n");
+        assert.ok(compactResult.startsWith("  ⎿ 已完成"));
+        assert.ok(compactResult.includes("独立评审意见"));
+        assert.ok(!compactResult.includes("执行过程"));
+        assert.ok(!compactResult.includes("threadId:"));
+        const progressBefore = JSON.stringify(first.details);
+        tool!.renderResult!(first, { expanded: true, isPartial: true } as never, theme as never, {} as never).render(40);
+        assert.equal(JSON.stringify(first.details), progressBefore);
         const threadId = (first.details as { threadId: string }).threadId;
         const next = await tool!.execute("2", { threadId, access: "read", task: "继续" }, undefined, undefined, ctx);
         assert.ok(!next.isError, JSON.stringify(next.content));

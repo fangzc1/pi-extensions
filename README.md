@@ -15,7 +15,7 @@ There is no build step: Pi loads the TypeScript sources under `.pi/extensions/` 
 | `.pi/extensions/custom-status-bar.ts` | Custom footer: model and thinking level, context window, project, Git branch, context usage, Pi home, and session ID | Automatic |
 | `.pi/extensions/model-thinking-memory.ts` | Remembers the last thinking level per model; restores the previous model and level on new sessions and forks | Automatic |
 | `.pi/extensions/conversation-logger.ts` | Saves the user and assistant text of every turn as Markdown | Automatic |
-| `.pi/extensions/model-collaboration/index.ts` | Registers the `subagent` tool for multi-model work; `/subagent-models` configures submodels | Tool call + slash command |
+| `.pi/extensions/model-delegation/index.ts` | Registers the `delegate_to_model` tool for multi-model work; `/model-delegation-config` configures submodels | Tool call + slash command |
 | `.pi/extensions/rewind-claude/index.ts` | Claude Code-style rewind of code and conversation | `/rewind-claude`, double `Esc` on an empty input |
 
 Every extension except `custom-status-bar` guards against duplicate registration, so loading the same extension more than once in a process registers it only once.
@@ -88,16 +88,18 @@ Persists the level on `thinking_level_select` and restores it on `model_select` 
 
 Writes only on `turn_end`, and only when the turn stops calling tools (`stopReason !== "toolUse"`). The output contains plain text only; thinking, tool calls, and internal injected markers are filtered out. File names follow `<YYYY-MM-DD-HHmmss>_<first 20 chars>_<first 6 chars of md5>.md` and are written atomically with `wx`, appending `_2`, `_3` suffixes on collision.
 
-### model-collaboration
+### model-delegation
 
-The main model hands work to another model through the `subagent` tool:
+The former `subagent` tool and `/subagent-models` command are now `delegate_to_model` and `/model-delegation-config`, without legacy aliases. Configuration and diagnostics retain their existing paths; no data migration is needed.
+
+The main model hands work to another model through the `delegate_to_model` tool:
 
 - `access: "read"` covers reviews and research; `access: "write"` lets the submodel modify the project and run commands, requires user confirmation before the call, and leaves changes in place when the call is cancelled or fails.
 - The submodel reuses the main session's credentials; nothing is copied or persisted.
 - Results over 50KB or 2000 lines are truncated, with the full text written to a temporary file.
 - Failures write a redacted diagnostic log that separates network retries from model-side errors.
 
-`/subagent-models` opens a configuration panel for the default submodel and per-model thinking levels. Models resolve in this order: the existing thread's model, the configured default, then the main session model. The thinking level prefers the thread, then the per-model setting, then the scoped setting or the model's supported default.
+`/model-delegation-config` opens a configuration panel for the default submodel and per-model thinking levels. Models resolve in this order: the existing thread's model, the configured default, then the main session model. The thinking level prefers the thread, then the per-model setting, then the scoped setting or the model's supported default.
 
 ### rewind-claude
 
@@ -117,8 +119,8 @@ Checkpoints track only Pi's `edit` and `write` tools; Bash, external editors, sy
 | --- | --- | --- |
 | Conversation logs | `<project>/.pi/logs/` | conversation-logger |
 | Per-model thinking levels | `<Pi agent directory>/model-thinking-levels.json` | model-thinking-memory |
-| Submodel configuration | `<Pi agent directory>/subagent-models.json` | model-collaboration |
-| Collaboration diagnostics | `<Pi agent directory>/model-collaboration-diagnostics/<sessionId>.jsonl` | model-collaboration |
+| Submodel configuration | `<Pi agent directory>/subagent-models.json` | model-delegation |
+| Collaboration diagnostics | `<Pi agent directory>/model-collaboration-diagnostics/<sessionId>.jsonl` | model-delegation |
 | Rewind checkpoints | `<session file>.rewind-claude/` (`manifest.json` + `blobs/`, up to 100 checkpoints); falls back to a temporary directory when there is no session file | rewind-claude |
 
 `<Pi agent directory>` is whatever `getAgentDir()` returns, by default `~/.pi/agent`.
@@ -130,7 +132,7 @@ Checkpoints track only Pi's `edit` and `write` tools; Bash, external editors, sy
 ├── .pi/extensions/           # extension sources, loaded directly by Pi
 │   ├── *.ts                  # single-file extensions: timer, logger, status bar, thinking memory, session naming
 │   ├── claude-style/         # Claude Code-style tool rendering and codemode view
-│   ├── model-collaboration/  # subagent tool, config panel, progress, diagnostics
+│   ├── model-delegation/     # delegate_to_model tool, config panel, progress, diagnostics
 │   └── rewind-claude/        # /rewind-claude command, checkpoint store, interaction
 ├── tests/                    # behavior tests for top-level extensions
 ├── docs/                     # design notes and module docs
