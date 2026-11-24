@@ -1,0 +1,117 @@
+tests/model-collaboration-progress.test.ts
+  s_73a498291b5cf3::t_82d5acccb0291f 4
+  s_d0b49d1339d206::t_368ea6d3ffaac5 71-81
+  s_63d6e55afc95c8::t_a56529550f3c90 10-37
+tests/model-collaboration.test.ts
+  s_6923abdd2b7307::t_e02126cf77afb8 225
+  s_6923abdd2b7307::t_ac3f14aec74b8c 209
+  s_d0b49d1339d206::t_80ea52aff94b1c 222-223,226-231
+  s_6923abdd2b7307::t_f3c824fb551ac7 260-264,287-288
+  s_6923abdd2b7307::t_96161edd0ec7d3 195,202,257,259
+  s_d0b49d1339d206::t_1397fc2f521990 199-201,203-204,285,289-292
+  s_d0b49d1339d206::t_faabcf7503e39c 205-208,210-212,232-235
+  s_6923abdd2b7307::t_ccb685f09fb88b 213-214,224
+  s_73a498291b5cf3::t_f522792fc2c618 9,11,87,112,150,194,196,241,246,258,266,273
+  s_b7d97845317af2::t_5cdf694f445e4a 77,178
+  s_6923abdd2b7307::t_626f2ab10d63f2 197,236-237,248-253,255-256,265,269-270
+  s_b7d97845317af2::t_3f41d395645945 239-240,242-244,267-268,271-272,275-284
+  s_6923abdd2b7307::t_174ae7aff55746 274
+  s_73a498291b5cf3::t_52c55e0f2ab3f6 91,95,106-110
+  s_6923abdd2b7307::t_6319f3c505092d 215-221
+  s_6923abdd2b7307::t_63176cf1b2cdbd 254,286
+  s_6923abdd2b7307::t_306c23e0be5cf0 238,245,247
+  s_8f93b5b2e7a5f7::t_e545d294dc36b2 88-90,92-94,96-105,111,113-126
+README.zh-CN.md
+  s_73a498291b5cf3::t_f180eb1f34873d 5,18,95,102,123
+  s_73a498291b5cf3::t_b795feabbd5e44 91,93-94,122,135
+tests/model-collaboration-concurrency.test.ts
+  s_b7d97845317af2::t_64cb69b8027a28 28
+  s_b7d97845317af2::t_6999f15ca0c8c1 61-62
+  s_b7d97845317af2::t_733d43b0dd3d45 1-2,4-27,29-60,63-68
+  s_73a498291b5cf3::t_fb665988eb50bf 3
+tests/model-collaboration-diagnostics.test.ts
+  s_73a498291b5cf3::t_88bfabf28b7f94 5
+README.md
+  s_73a498291b5cf3::t_a8c30caf13550f 93-94,122,135
+  s_73a498291b5cf3::t_b09595a50570ac 18,91,95,102,123
+tests/model-collaboration-rendering.test.ts
+  s_73a498291b5cf3::t_027cc69e4c8b0d 4
+  s_d0b49d1339d206::t_a0319f72466618 1-3,27-46
+  s_63d6e55afc95c8::t_7e829e962a1daa 17-26
+  s_6923abdd2b7307::t_e389447564e4c8 5-16
+tests/model-collaboration-parallel-sdk.test.ts
+  s_73a498291b5cf3::t_3c398413c67979 9
+  s_b7d97845317af2::t_ab0701ad50164e 1-8,10-92
+tests/model-collaboration-panel.test.ts
+  s_73a498291b5cf3::t_937dde3d45c331 5-6
+tests/model-collaboration-retry.test.ts
+  s_73a498291b5cf3::t_4378497e3d21c0 9
+package.json
+  s_73a498291b5cf3::t_1db83233034282 22
+.pi/extensions/model-delegation/core.ts
+  s_73a498291b5cf3::t_abb5fb9b30a26d 53,67-68,71,73-78,84-85,87-91,101-102,104-109,114,118-121,124,127-137
+.pi/extensions/model-delegation/diagnostics.ts
+  s_b7d97845317af2::t_e9fb5136e3ab87 30-31,33,95
+.pi/extensions/model-delegation/index.ts
+  s_73a498291b5cf3::t_e7a3944fb9cac6 1,7,16-22,28,31-33,56,62,70,72-74,89-92,102,105,136-137,141-142,151-153,160-161,171,175,180,196-203,226-253,255,258-263,265-276,278-281,285-295
+.pi/extensions/model-delegation/progress.ts
+  s_6923abdd2b7307::t_47dd1a8dbde1d4 34,38,45,50-66,68,78,86,96,103,113-128,130-140,142,150
+.pi/extensions/model-delegation/rendering.ts
+  s_6923abdd2b7307::t_e6842cde0cfeab 1-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bcb98c79f140599ae0220d173cd20341d34a5169",
+  "prompts": {},
+  "sessions": {
+    "s_63d6e55afc95c8": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a20779-a4d0-70d3-a08e-ee69170080e4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangzc1 <fangzc1@lenovo.com>"
+    },
+    "s_6923abdd2b7307": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a20780-ebcb-70d3-a08e-ee6ce6b22674",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangzc1 <fangzc1@lenovo.com>"
+    },
+    "s_73a498291b5cf3": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a20ca0-a7d0-74e1-9c48-445381e7f5b4",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangzc1 <fangzc1@lenovo.com>"
+    },
+    "s_8f93b5b2e7a5f7": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a2065b-8e53-76ff-bfc2-3903324586a3",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangzc1 <fangzc1@lenovo.com>"
+    },
+    "s_b7d97845317af2": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a20c27-5920-722a-860a-f574a752ff61",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangzc1 <fangzc1@lenovo.com>"
+    },
+    "s_d0b49d1339d206": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a20731-85bf-70d3-a08e-ee65403b032b",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangzc1 <fangzc1@lenovo.com>"
+    }
+  }
+}
