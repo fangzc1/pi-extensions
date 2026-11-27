@@ -1,0 +1,130 @@
+.pi/extensions/multi-accounts/stream.ts
+  s_fb3ece67489b09::t_c5edbfbc1e4d04 3-30,72,82,97,100-112,114-116
+  s_fb3ece67489b09::t_be049fec8369e3 45-67,75,99,113,117-129
+  s_fb3ece67489b09::t_9d23b27b87257b 1-2
+  s_fb3ece67489b09::t_d7434e8ccf281d 31-33,42-44
+  s_fb3ece67489b09::t_27f119b841513b 68-71
+  s_fb3ece67489b09::t_0949e782e5701e 73-74
+  s_fb3ece67489b09::t_73306a658d59fc 76-81
+  s_fb3ece67489b09::t_3d6fc59d826eba 83-85,94-96
+  s_fb3ece67489b09::t_3aa729892431f4 98
+  s_fb3ece67489b09::t_911649ab847b33 130-132
+  s_fb3ece67489b09::t_054359eb137f35 34-41,86-93,133-148
+package.json
+  s_9e8f2ac7c1e8e6::t_2a562a8767dc83 38,40-42
+  s_9e8f2ac7c1e8e6::t_a9908f8cad7a16 22
+.pi/extensions/multi-accounts/quota.ts
+  s_fb3ece67489b09::t_d6052ab43d32d4 13-15,24-25
+  s_fb3ece67489b09::t_5c25aa9c4b5f5e 1-12,16-23,26-45
+tests/multi-accounts-quota.test.ts
+  s_fb3ece67489b09::t_febfb47ba2e909 1-35,40-47,49,52-54
+  s_fb3ece67489b09::t_43d7192c0f4f5b 36-39,48,50-51
+tests/multi-accounts.test.ts
+  s_9e8f2ac7c1e8e6::t_a013498a3075dd 3,24,34,45,50,61,70-94,103,105
+  s_9e8f2ac7c1e8e6::t_d3d088d1226e96 6
+  s_9e8f2ac7c1e8e6::t_b629ca905759ce 1-2
+  s_9e8f2ac7c1e8e6::t_9fe76924b2b32e 4-5
+  s_9e8f2ac7c1e8e6::t_94c8485aa59896 7-9,21-23
+  s_9e8f2ac7c1e8e6::t_db9768f76455d6 25-27,31-33
+  s_9e8f2ac7c1e8e6::t_ceb94093d38f38 35-37,42-44
+  s_9e8f2ac7c1e8e6::t_6ec08f48ec02c5 46-49
+  s_9e8f2ac7c1e8e6::t_8b4e446e3a6c78 51-53,58-60
+  s_9e8f2ac7c1e8e6::t_3689df951b5abb 62-64,67-69
+  s_9e8f2ac7c1e8e6::t_2be20b46613e60 95-97,100-102
+  s_9e8f2ac7c1e8e6::t_a0e5ad203246c4 104
+  s_9e8f2ac7c1e8e6::t_9419efd74bc7f7 10-20,28-30,38-41,54-57,65-66,98-99
+tests/model-collaboration-panel.test.ts
+  s_8796378b6e11e4::t_b95e8a6181e40f 15,18,20,24,33-42,44,58,63
+.pi/extensions/model-delegation/index.ts
+  s_8796378b6e11e4::t_8a597934455782 110,121-132
+.pi/extensions/multi-accounts/store.ts
+  s_fb3ece67489b09::t_71b42a1f07f40c 91
+  s_9e8f2ac7c1e8e6::t_d2696dc3a8eaf7 58-73,142
+  s_fb3ece67489b09::t_0033cbc9e4fcca 5-16,80,85-90,92-94,96,152,163,169,179,188-215,217
+  s_fb3ece67489b09::t_128786af66c677 2-4
+  s_fb3ece67489b09::t_94a6e3caf91728 81-84
+  s_fb3ece67489b09::t_0dadb62f88d042 95
+  s_fb3ece67489b09::t_3d78a56bb5c97f 153-155,160-162
+  s_fb3ece67489b09::t_7f47329ed9a9ae 164-168
+  s_fb3ece67489b09::t_7b2d53f99b8765 170-172,176-178
+  s_fb3ece67489b09::t_2e95ee3a9e6ae5 180-182,185-187
+  s_fb3ece67489b09::t_08845ca3505205 216
+  s_fb3ece67489b09::t_06cfab697f187e 218-220
+  s_fb3ece67489b09::t_62baf8cbb2c07e 1,17-57,74-79,97-141,143-151,156-159,173-175,183-184,221
+tests/multi-accounts-stream.test.ts
+  s_fb3ece67489b09::t_73934ac80fb84e 36
+  s_9e8f2ac7c1e8e6::t_ca63a46bfcd099 14-15
+  s_fb3ece67489b09::t_6e64410cc87108 92,94,105-120,133
+  s_fb3ece67489b09::t_d620c576c1b6e8 29-32,66-69,80
+  s_fb3ece67489b09::t_d9b473ec3c9f53 34-35,37-65,70-77,81-88
+  s_9e8f2ac7c1e8e6::t_0c415808f82342 11-13
+  s_fb3ece67489b09::t_649e44f4322b1c 33
+  s_fb3ece67489b09::t_da66bb626c6cbb 78-79
+  s_fb3ece67489b09::t_87ebaa875e5d86 89-91
+  s_fb3ece67489b09::t_0e3ecff8b1c37f 93
+  s_fb3ece67489b09::t_8f8a1691983076 95-97,102-104
+  s_fb3ece67489b09::t_29a6f026cf8971 121-123,130-132
+  s_fb3ece67489b09::t_c67a7e6924a9a2 1-10,16-28,98-101,124-129
+tests/multi-accounts-login.test.ts
+  s_9e8f2ac7c1e8e6::t_e01c27c13ab4c4 7-8
+  s_9e8f2ac7c1e8e6::t_92939ad3741d0f 4-6
+  s_9e8f2ac7c1e8e6::t_86e0d022658fb8 9-11
+  s_9e8f2ac7c1e8e6::t_554ee789c88cea 1-3,12-64
+tests/multi-accounts-ui.test.ts
+  s_9e8f2ac7c1e8e6::t_f934dd6e5d1ae5 16
+  s_9e8f2ac7c1e8e6::t_a0ecf8fbcb80aa 7-8
+  s_9e8f2ac7c1e8e6::t_839914ba9b4806 4-6
+  s_9e8f2ac7c1e8e6::t_2dd5c2554436db 9-11,13-15
+  s_9e8f2ac7c1e8e6::t_4a5d1471c736bb 17-19
+  s_9e8f2ac7c1e8e6::t_2bbec17a1d9837 1-3,12,20-38
+.pi/extensions/multi-accounts/index.ts
+  s_fb3ece67489b09::t_d767308498f196 198
+  s_9e8f2ac7c1e8e6::t_2ad36be1daa88c 66-87,205-208
+  s_9e8f2ac7c1e8e6::t_3ea0d961538eac 63-65
+  s_9e8f2ac7c1e8e6::t_48facd27a38667 209-211
+  s_fb3ece67489b09::t_60a8b70f4f5834 1-62,88-197,199-204,212-239
+.pi/extensions/model-delegation/model-panel.ts
+  s_8796378b6e11e4::t_7a23b8acce43bc 11,19,28,36,43,45-51,90
+package-lock.json
+  s_4331c62714d775::t_1d80a259c1fd77 11-13,16,24-782,792-807,813-1017,1023,1029,1031-1032,1040,1046,1048-1049,1057,1063,1065-1066,1074,1080,1082-1083,1091,1097,1099-1100,1102,1108,1114,1116-1117,1125-1142,1148-1671,1673-1674,1676,1679-1689,1691-1695,1698-1701,1703,1705-1737,1740-1749,1751,1754-1766,1768,1771-1779,1782-1786,1788,1791-1810,1812,1815-1820,1822-1830,1833-1845,1847,1850-1866,1868-1879,1881,1884-1892,1894,1897-1902,1904-1921,1924-1944,1980-1989,1995-2058
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cdc75bd91d66146a98b9e7e088dced221d3582aa",
+  "prompts": {},
+  "sessions": {
+    "s_4331c62714d775": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a21ca5-5562-7262-9185-37188042e610",
+        "model": "unknown"
+      },
+      "human_author": "fangzc1 <fangzc1@lenovo.com>"
+    },
+    "s_8796378b6e11e4": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a21d9f-8a02-74e0-94dc-6103b4c96f7d",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangzc1 <fangzc1@lenovo.com>"
+    },
+    "s_9e8f2ac7c1e8e6": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a20d19-1b59-726a-9412-325b33d7bd48",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangzc1 <fangzc1@lenovo.com>"
+    },
+    "s_fb3ece67489b09": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a21cc3-6211-7506-92b5-3e86407f885a",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "fangzc1 <fangzc1@lenovo.com>"
+    }
+  }
+}
