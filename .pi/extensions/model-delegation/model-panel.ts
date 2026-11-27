@@ -8,7 +8,7 @@ export interface ModelOption {
     effectiveLevel: Level;
 }
 
-/** 修改只保存在面板草稿中，Ctrl+S 返回结果，Esc 不触碰原始配置。 */
+/** Ctrl+S 保存草稿但不关闭，Esc 关闭并丢弃未保存的修改。 */
 export class ModelPanel implements Component {
     private selected = 0;
     private closed = false;
@@ -16,6 +16,7 @@ export class ModelPanel implements Component {
     private readonly models: readonly ModelOption[];
     private readonly theme: Theme;
     private readonly done: (config: Config | undefined) => void;
+    private readonly save: (config: Config) => void;
     private readonly requestRender: () => void;
     private readonly height: () => number;
 
@@ -24,6 +25,7 @@ export class ModelPanel implements Component {
         config: Config;
         theme: Theme;
         done: (config: Config | undefined) => void;
+        save: (config: Config) => void;
         requestRender: () => void;
         height: () => number;
     }) {
@@ -31,15 +33,22 @@ export class ModelPanel implements Component {
         this.draft = { ...options.config, levels: { ...options.config.levels } };
         this.theme = options.theme;
         this.done = options.done;
+        this.save = options.save;
         this.requestRender = options.requestRender;
         this.height = options.height;
     }
 
     handleInput(data: string): void {
         if (this.closed) return;
-        if (matchesKey(data, Key.escape) || matchesKey(data, Key.ctrl("s"))) {
+        if (matchesKey(data, Key.escape)) {
             this.closed = true;
-            this.done(matchesKey(data, Key.escape) ? undefined : this.draft);
+            this.done(undefined);
+            return;
+        }
+        if (matchesKey(data, Key.ctrl("s"))) {
+            // 保存独立快照，后续编辑不能改变已经提交的配置。
+            this.save({ ...this.draft, levels: { ...this.draft.levels } });
+            this.requestRender();
             return;
         }
         if (!this.models.length) return;
@@ -78,7 +87,7 @@ export class ModelPanel implements Component {
         }
         if (!this.models.length) lines.push("当前没有可用模型");
         lines.push("", this.theme.fg("dim", `↑↓ 选择模型  ←→ 思考等级  Enter 设为默认  (${this.selected + 1}/${this.models.length})`),
-            this.theme.fg("dim", "Ctrl+S 保存全部  Esc 放弃"));
+            this.theme.fg("dim", "Ctrl+S 保存全部  Esc 关闭"));
         return lines.map((line) => truncateToWidth(line, Math.max(0, width)));
     }
 

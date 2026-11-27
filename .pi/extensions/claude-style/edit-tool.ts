@@ -12,6 +12,7 @@ import {
     createClaudeEditPreview,
     type ClaudeEditModel,
 } from "./edit-view.ts";
+import { resolveExpandHint, type ExpandHintSource } from "./format-utils.ts";
 
 interface EditRenderState {
     view?: ClaudeEditView;
@@ -20,9 +21,10 @@ interface EditRenderState {
 }
 
 /** Pi 未公开 ToolRenderContext，扩展只声明 renderer 实际使用的结构。 */
-interface EditRenderContext {
+interface EditRenderContext extends Partial<ExpandHintSource> {
     args: unknown;
     state: unknown;
+    expanded?: boolean;
     lastComponent?: Component;
     isError: boolean;
     cwd: string;
@@ -64,10 +66,19 @@ function getState(context: EditRenderContext): EditRenderState {
     return context.state as EditRenderState;
 }
 
+function resolveHintFromContext(context: EditRenderContext): string {
+    if (typeof context.keyText === "function" && typeof context.keyHint === "function") {
+        return resolveExpandHint({ keyText: context.keyText, keyHint: context.keyHint });
+    }
+    return resolveExpandHint();
+}
+
 function updateView(
     state: EditRenderState,
     model: ClaudeEditModel,
     theme: Theme,
+    expanded: boolean,
+    expandHint: string,
     lastComponent: Component | undefined,
 ): ClaudeEditView {
     const view =
@@ -76,6 +87,8 @@ function updateView(
             : state.view ?? new ClaudeEditView(model, theme);
     view.setTheme(theme);
     view.setModel(model);
+    view.setExpanded(expanded);
+    view.setExpandHint(expandHint);
     state.view = view;
     return view;
 }
@@ -92,7 +105,14 @@ export function createClaudeEditToolDefinition(cwd: string) {
             const input = getInput(args);
             const model =
                 state.resultModel ?? createClaudeEditPreview(input.path, input.edits, context.cwd);
-            return updateView(state, model, theme, context.lastComponent);
+            return updateView(
+                state,
+                model,
+                theme,
+                Boolean(context.expanded),
+                resolveHintFromContext(context),
+                context.lastComponent,
+            );
         },
         renderResult(
             result: { content: Array<{ type: string; text?: string }>; details?: EditToolDetails },
@@ -101,6 +121,7 @@ export function createClaudeEditToolDefinition(cwd: string) {
             context: EditRenderContext,
         ) {
             const state = getState(context);
+            const expandHint = resolveHintFromContext(context);
             if (!options.isPartial) {
                 const input = getInput(context.args);
                 state.resultModel = context.isError
@@ -117,10 +138,12 @@ export function createClaudeEditToolDefinition(cwd: string) {
                           context.cwd,
                           "success",
                       );
-                if (state.view) {
-                    state.view.setTheme(theme);
-                    state.view.setModel(state.resultModel);
-                }
+            }
+            if (state.view) {
+                state.view.setTheme(theme);
+                if (state.resultModel) state.view.setModel(state.resultModel);
+                state.view.setExpanded(options.expanded);
+                state.view.setExpandHint(expandHint);
             }
 
             // 主体由 renderCall 的同一组件承载，避免完成时重复输出。

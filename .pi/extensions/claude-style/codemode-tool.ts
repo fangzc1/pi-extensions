@@ -2,6 +2,7 @@ import type { Theme, ToolRendererResolver, ToolRenderers } from "@earendil-works
 import { Container } from "@earendil-works/pi-tui";
 
 import { ClaudeCodemodeView, type CodemodeResult } from "./codemode-view.ts";
+import { resolveExpandHint } from "./format-utils.ts";
 
 /** Pi 内置 codemode 工具名（`CODEMODE_TOOL_NAME` 未从包入口导出）。 */
 const CODEMODE_TOOL_NAME = "codemode";
@@ -36,6 +37,7 @@ const claudeCodemodeRenderers: ToolRenderers = {
         view.setTheme(theme);
         view.setShowImages(context.showImages);
         view.setExpanded(context.expanded);
+        view.setExpandHint(resolveExpandHint(context));
         return view;
     },
     renderResult(result, options, theme, context) {
@@ -43,6 +45,7 @@ const claudeCodemodeRenderers: ToolRenderers = {
         const codemodeResult = result as CodemodeResult;
         view.setTheme(theme);
         view.setShowImages(context.showImages);
+        view.setExpandHint(resolveExpandHint(context));
         if (options.isPartial) {
             view.setPending(codemodeResult, options.expanded);
         } else {

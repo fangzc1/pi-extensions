@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import projectAntigravityCli from "../.pi/extensions/antigravity-cli/index.ts";
 import projectClaudeStyle from "../.pi/extensions/claude-style/index.ts";
 import projectConversationLogger from "../.pi/extensions/conversation-logger.ts";
 import projectModelThinkingMemory from "../.pi/extensions/model-thinking-memory.ts";
@@ -25,6 +26,7 @@ class FakePi {
         registerToolRenderer: () => { this.registrationCount++; },
         registerCommand: () => { this.registrationCount++; },
         registerEntryRenderer: () => { this.registrationCount++; },
+        registerMessageRenderer: () => { this.registrationCount++; },
     };
 
     async shutdown(): Promise<void> {
@@ -59,6 +61,7 @@ const extensions: Array<{
     userPath: string;
     project: ExtensionFactory;
 }> = [
+    { name: "antigravity-cli", userPath: "antigravity-cli/index.ts", project: projectAntigravityCli },
     { name: "claude-style", userPath: "claude-style/index.ts", project: projectClaudeStyle },
     { name: "conversation-logger", userPath: "conversation-logger.ts", project: projectConversationLogger },
     { name: "model-thinking-memory", userPath: "model-thinking-memory.ts", project: projectModelThinkingMemory },

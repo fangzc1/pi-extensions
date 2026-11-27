@@ -10,6 +10,7 @@ import {
 } from "@earendil-works/pi-coding-agent";
 import { Container } from "@earendil-works/pi-tui";
 
+import { resolveExpandHint } from "./format-utils.ts";
 import { ClaudeBuiltinToolView, type ClaudeBuiltinToolKind } from "./tool-view.ts";
 
 type Platform = NodeJS.Platform;
@@ -35,6 +36,9 @@ function createClaudeToolDefinition(
                     : state.view ?? new ClaudeBuiltinToolView(kind, args, theme);
             view.setArgs(args);
             view.setTheme(theme);
+            view.setCwd(context.cwd);
+            view.setExpanded(context.expanded);
+            view.setExpandHint(resolveExpandHint(context));
             state.view = view;
             return view;
         },
@@ -47,6 +51,8 @@ function createClaudeToolDefinition(
             const state = context.state as ClaudeRenderState;
             const view = state.view ?? new ClaudeBuiltinToolView(kind, context.args, theme);
             view.setTheme(theme);
+            view.setCwd(context.cwd);
+            view.setExpandHint(resolveExpandHint(context));
             if (options.isPartial) {
                 view.setPending(result, options.expanded);
             } else {

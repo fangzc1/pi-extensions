@@ -7,12 +7,21 @@ import {
     type Component,
 } from "@earendil-works/pi-tui";
 
+import {
+    collapseTail,
+    formatErrorLines,
+    normalizeNewlines,
+    plural,
+    resolveExpandHint,
+    splitOutputLines,
+} from "./format-utils.ts";
 import { statusBullet } from "./tool-view.ts";
-import { getExpandHint } from "./write-view.ts";
 
 const RESULT_PREFIX = "  ⎿  ";
 const DETAIL_INDENT = "     ";
-const COLLAPSED_LINES = 10;
+const COLLAPSED_OUTPUT_LINES = 3;
+const COLLAPSED_PENDING_CALLS = 4;
+const MAX_HEADER_TOOLS = 4;
 const COLLAPSED_ARGS_CHARS = 80;
 /** Pi 在结果首块写入的脚本站头，同时携带挂钟耗时。 */
 const SCRIPT_HEADER = /^Script (?:completed|failed)\nWall time ([\d.]+) seconds\nOutput:\n$/u;
@@ -59,10 +68,6 @@ function statusIcon(status: CodemodeCallStatus, theme: Theme): string {
     }
 }
 
-function plural(count: number, singular: string): string {
-    return count === 1 ? singular : `${singular}s`;
-}
-
 function formatDuration(ms: number): string {
     return ms < 1000 ? `${Math.round(ms)}ms` : `${(ms / 1000).toFixed(1)}s`;
 }
@@ -74,25 +79,51 @@ function formatCost(cost: number): string {
 
 function truncateArgs(args: string): string {
     // 单个数组元素必须严格对应一个物理行，嵌套调用参数先压平换行。
-    const flat = args.replace(/\r\n?/gu, " ").replace(/\n/gu, " ");
+    const flat = normalizeNewlines(args).replace(/\n/gu, " ");
     return flat.length > COLLAPSED_ARGS_CHARS ? `${flat.slice(0, COLLAPSED_ARGS_CHARS - 3)}...` : flat;
 }
 
-/** 折叠超出预算的详情行，保持与其它 Claude 风格工具一致的提示语。 */
-function collapseDetails(lines: string[], expanded: boolean, theme: Theme): string[] {
-    if (expanded || lines.length <= COLLAPSED_LINES) return lines;
-    const hidden = lines.length - COLLAPSED_LINES;
-    return [
-        ...lines.slice(0, COLLAPSED_LINES),
-        theme.fg("muted", `... (${hidden} more lines, ${getExpandHint()})`),
-    ];
+/** 聚合嵌套调用为紧凑意图摘要，例如 `find, read ×3`。 */
+function summarizeCallsForHeader(calls: readonly CodemodeNestedCall[]): string {
+    const counts = new Map<string, number>();
+    for (const call of calls) {
+        counts.set(call.name, (counts.get(call.name) ?? 0) + 1);
+    }
+    const entries = [...counts.entries()];
+    const shown = entries.slice(0, MAX_HEADER_TOOLS).map(([name, count]) =>
+        count > 1 ? `${name} ×${count}` : name,
+    );
+    const remaining = entries.length - shown.length;
+    if (remaining > 0) shown.push(`+${remaining} more`);
+    return shown.join(", ");
 }
 
-/** Claude Code 工具块：脚本首行摘要作为标题，嵌套调用与脚本输出统一使用 ⎿ 缩进。 */
+/** 提取脚本首条有意义的注释作为无嵌套调用时的标题摘要（跳过 `@options:` 指令）。 */
+function extractFirstComment(codeLines: readonly string[]): string | undefined {
+    for (const rawLine of codeLines) {
+        const line = rawLine.trim();
+        if (!line) continue;
+        if (line.startsWith("//")) {
+            const text = line.slice(2).trim();
+            if (!text || text.startsWith("@options:")) continue;
+            return text;
+        }
+        if (line.startsWith("/*")) {
+            const text = line.replace(/^\/\*+/u, "").replace(/\*+\/$/u, "").trim();
+            if (text && !text.startsWith("@options:")) return text;
+        }
+        // 首行已是可执行代码，停止向后扫描注释。
+        break;
+    }
+    return undefined;
+}
+
+/** Claude Code 高信噪比 codemode 视图：标题聚合语义、折叠态隐藏成功子调用并取尾部输出。 */
 export class ClaudeCodemodeView implements Component {
     private calls: CodemodeNestedCall[] = [];
     private code = "";
     private expanded = false;
+    private expandHint = resolveExpandHint();
     private fullOutputPath?: string;
     private images: Array<{ data?: string; mimeType?: string }> = [];
     private invalid = false;
@@ -119,6 +150,10 @@ export class ClaudeCodemodeView implements Component {
 
     setExpanded(expanded: boolean): void {
         this.expanded = expanded;
+    }
+
+    setExpandHint(hint: string): void {
+        this.expandHint = hint;
     }
 
     setShowImages(showImages: boolean): void {
@@ -188,18 +223,20 @@ export class ClaudeCodemodeView implements Component {
             ];
         }
 
-        const codeLines = this.code.replace(/\r\n?/gu, "\n").replace(/\t/gu, "   ").trimEnd().split("\n");
+        const codeLines = normalizeNewlines(this.code).replace(/\t/gu, "   ").trimEnd().split("\n");
         const firstIndex = codeLines.findIndex((line) => line.trim().length > 0);
-        if (firstIndex === -1) {
-            return [truncateToWidth(`${bullet} ${title}()`, width, "…")];
+
+        if (!this.expanded) {
+            const headerBody = this.collapsedHeaderBody(codeLines, firstIndex);
+            const wallSuffix =
+                this.phase === "success" && this.wallTime !== undefined
+                    ? this.theme.fg("muted", ` · ${this.wallTime}s`)
+                    : "";
+            return [truncateToWidth(`${bullet} ${title}(${headerBody})${wallSuffix}`, width, "…")];
         }
 
-        // 折叠态只保留首行摘要，展开态才渲染完整脚本：脚本在流式期间每帧都会重绘。
-        if (!this.expanded) {
-            const first = codeLines[firstIndex] ?? "";
-            const summary = highlightCode(first, "javascript")[0] ?? first;
-            const more = codeLines.length > firstIndex + 1 ? " …" : "";
-            return [truncateToWidth(`${bullet} ${title}(${summary}${more})`, width, "…")];
+        if (firstIndex === -1) {
+            return [truncateToWidth(`${bullet} ${title}()`, width, "…")];
         }
 
         const highlighted = highlightCode(codeLines.join("\n"), "javascript");
@@ -209,31 +246,71 @@ export class ClaudeCodemodeView implements Component {
         );
     }
 
+    private collapsedHeaderBody(codeLines: readonly string[], firstIndex: number): string {
+        if (this.calls.length > 0) {
+            return summarizeCallsForHeader(this.calls);
+        }
+        if (firstIndex === -1) return "";
+        const comment = extractFirstComment(codeLines);
+        if (comment) return comment;
+        const first = codeLines[firstIndex] ?? "";
+        const summary = highlightCode(first, "javascript")[0] ?? first;
+        const more = codeLines.length > firstIndex + 1 ? " …" : "";
+        return `${summary}${more}`;
+    }
+
     private renderResult(): string[] {
         if (this.phase === "error") {
-            return this.errorMessage()
-                .replace(/\r\n?/gu, "\n")
-                .split("\n")
-                .map((line, index) => {
-                    const labeled =
-                        index === 0 && line.length > 0 && !line.startsWith("Error:")
-                            ? `Error: ${line}`
-                            : line;
-                    return labeled ? this.theme.fg("error", labeled) : labeled;
-                });
+            const lines = formatErrorLines(this.errorMessage(), this.theme, {
+                expanded: this.expanded,
+                keep: "head",
+                expandHint: this.expandHint,
+            });
+            if (this.fullOutputPath) {
+                lines.push(this.theme.fg("muted", `Full output: ${this.fullOutputPath}`));
+            }
+            return lines;
         }
 
-        const details = [
-            ...this.callLines(),
+        if (this.expanded) {
+            const lines = [
+                this.summaryLine(),
+                ...this.formatCalls(this.calls),
+                ...this.costLines(),
+                ...splitOutputLines(this.output),
+                ...this.imageLines(),
+            ];
+            if (this.fullOutputPath) {
+                lines.push(this.theme.fg("muted", `Full output: ${this.fullOutputPath}`));
+            }
+            return lines;
+        }
+
+        if (this.phase === "pending") {
+            const activeCalls = this.calls.filter(
+                (call) => call.status === "running" || call.status === "error",
+            );
+            const shown = activeCalls.slice(-COLLAPSED_PENDING_CALLS);
+            return [this.theme.fg("muted", "Running…"), ...this.formatCalls(shown)];
+        }
+
+        // 成功折叠态隐藏已成功的内部子调用，只保留失败/取消调用、多模型成本合计、尾部输出与附件提示。
+        const notableCalls = this.calls.filter(
+            (call) => call.status === "error" || call.status === "cancelled",
+        );
+        const outputLines = collapseTail(
+            splitOutputLines(this.output),
+            COLLAPSED_OUTPUT_LINES,
+            false,
+            this.theme,
+            this.expandHint,
+        );
+        const lines = [
+            ...this.formatCalls(notableCalls),
             ...this.costLines(),
-            ...this.outputLines(),
+            ...outputLines,
             ...this.imageLines(),
         ];
-        const lines = [
-            this.summaryLine(),
-            ...collapseDetails(details, this.expanded, this.theme),
-        ];
-        // 截断提示在折叠时会隐没，因此完整输出路径始终可见。
         if (this.fullOutputPath) {
             lines.push(this.theme.fg("muted", `Full output: ${this.fullOutputPath}`));
         }
@@ -250,8 +327,8 @@ export class ClaudeCodemodeView implements Component {
         return this.wallTime === undefined ? label : `${label} in ${this.wallTime}s`;
     }
 
-    private callLines(): string[] {
-        return this.calls.flatMap((call) => {
+    private formatCalls(calls: readonly CodemodeNestedCall[]): string[] {
+        return calls.flatMap((call) => {
             const parts = [
                 `${statusIcon(call.status, this.theme)} ${this.theme.fg("toolTitle", call.name)}`,
             ];
@@ -265,11 +342,14 @@ export class ClaudeCodemodeView implements Component {
                 parts.push(this.theme.fg("dim", formatCost(call.cost)));
             }
             const line = parts.join(" ");
-            if (!this.expanded || !call.error) return [line];
+            if (!call.error) return [line];
+            if (!this.expanded) {
+                const firstError = normalizeNewlines(call.error).split("\n")[0]?.trim();
+                return firstError ? [`${line} ${this.theme.fg("error", firstError)}`] : [line];
+            }
             return [
                 line,
-                ...call.error
-                    .replace(/\r\n?/gu, "\n")
+                ...normalizeNewlines(call.error)
                     .split("\n")
                     .map((detail) => this.theme.fg("error", detail)),
             ];
@@ -278,14 +358,10 @@ export class ClaudeCodemodeView implements Component {
 
     private costLines(): string[] {
         const priced = this.calls.filter((call) => call.cost);
-        // 单次调用的成本已显示在该调用行上，只有多次模型调用才需要合计行。
+        // 仅在存在多笔模型调用时汇总总成本，避免单次调用信息噪音。
         if (priced.length < 2) return [];
         const total = priced.reduce((sum, call) => sum + (call.cost ?? 0), 0);
         return [this.theme.fg("muted", `Model calls: ${formatCost(total)}`)];
-    }
-
-    private outputLines(): string[] {
-        return this.output.trim() ? this.output.replace(/\r\n?/gu, "\n").trimEnd().split("\n") : [];
     }
 
     /** 终端不能内联展示（或用户关闭了图片）时给出文字占位，避免脚本的 image() 输出凭空消失。 */

@@ -12,14 +12,16 @@ const models: ModelOption[] = [
 ];
 function setup(config: Config = { defaultModel: "p/a", levels: {} }, options = models) {
     const results: Array<Config | undefined> = [];
+    const saved: Config[] = [];
     let renders = 0;
     const panel = new ModelPanel({ models: options, config, theme, done: (result) => results.push(result),
+        save: (result: Config) => saved.push(result),
         requestRender: () => { renders++; }, height: () => 12 });
-    return { panel, results, config, renders: () => renders };
+    return { panel, results, saved, config, renders: () => renders };
 }
 
 test("方向键直接修改等级，Enter 设默认，Ctrl+S 一次提交所有草稿", () => {
-    const { panel, results, config, renders } = setup();
+    const { panel, results, saved, config } = setup();
     panel.handleInput("\u001b[C");
     assert.ok(panel.render(100).some((line) => line.includes("p/a · high (default)")));
     panel.handleInput("\u001b[B");
@@ -28,10 +30,18 @@ test("方向键直接修改等级，Enter 设默认，Ctrl+S 一次提交所有�
     assert.equal(config.defaultModel, "p/a");
     assert.deepEqual(config.levels, {});
     panel.handleInput("\u0013");
-    assert.deepEqual(results, [{ defaultModel: "p/b", levels: { "p/a": "high" } }]);
-    assert.equal(renders(), 3);
+    assert.deepEqual(saved, [{ defaultModel: "p/b", levels: { "p/a": "high" } }]);
+    assert.equal(results.length, 0);
+    panel.handleInput("\u001b[A");
+    panel.handleInput("\u001b[D");
     panel.handleInput("\u0013");
-    assert.equal(results.length, 1);
+    assert.deepEqual(saved[1], { defaultModel: "p/b", levels: { "p/a": "low" } });
+    assert.equal(saved[0].levels["p/a"], "high");
+    assert.equal(results.length, 0);
+    panel.handleInput("\u001b");
+    assert.deepEqual(results, [undefined]);
+    panel.handleInput("\u0013");
+    assert.equal(saved.length, 2);
 });
 
 test("Esc 放弃默认与思考等级的全部修改", () => {
@@ -45,12 +55,12 @@ test("Esc 放弃默认与思考等级的全部修改", () => {
 });
 
 test("思考等级遵守各模型能力，选择可循环", () => {
-    const { panel, results } = setup();
+    const { panel, saved } = setup();
     panel.handleInput("\u001b[A");
     panel.handleInput("\u001b[C");
     panel.handleInput("\r");
     panel.handleInput("\u0013");
-    assert.deepEqual(results[0], { defaultModel: "p/b", levels: { "p/b": "off" } });
+    assert.deepEqual(saved[0], { defaultModel: "p/b", levels: { "p/b": "off" } });
 });
 
 test("长名单可滚动，中文与窄终端渲染不超宽，默认标记仍可见", () => {

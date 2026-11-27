@@ -1,9 +1,18 @@
 import { generateDiffString, type Theme } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth, type Component } from "@earendil-works/pi-tui";
-import { isAbsolute, relative } from "node:path";
+
+import {
+    displayPath,
+    formatErrorLines,
+    formatFoldNotice,
+    plural,
+    resolveExpandHint,
+} from "./format-utils.ts";
 
 const INDENT = "     ";
-const CONTEXT_LINES = 3;
+const EXPANDED_CONTEXT_LINES = 3;
+const COLLAPSED_CONTEXT_LINES = 2;
+const COLLAPSED_DIFF_LINES = 12;
 
 type Rgb = readonly [red: number, green: number, blue: number];
 
@@ -67,12 +76,6 @@ interface ChangeRange {
     oldEnd: number;
     newStart: number;
     newEnd: number;
-}
-
-function displayPath(path: string, cwd: string): string {
-    if (!isAbsolute(path)) return path;
-    const candidate = relative(cwd, path);
-    return candidate && !candidate.startsWith("..") && !isAbsolute(candidate) ? candidate : path;
 }
 
 function parseLine(line: string): ParsedLine {
@@ -147,11 +150,11 @@ function parseUnifiedLines(diff: string): { lines: EditLine[]; additions: number
         lineOffset += added.length - removed.length;
     }
 
-    return { lines: trimContext(lines), additions, removals };
+    return { lines: trimContext(lines, EXPANDED_CONTEXT_LINES), additions, removals };
 }
 
-/** 每个变更块只保留前后各三行上下文，并去掉首尾无意义的省略号。 */
-function trimContext(lines: EditLine[]): EditLine[] {
+/** 每个变更块只保留前后各 contextLines 行上下文，并去掉首尾无意义的省略号。 */
+function trimContext(lines: readonly EditLine[], contextLines: number): EditLine[] {
     const output: EditLine[] = [];
     const segments: EditLine[][] = [];
     let segment: EditLine[] = [];
@@ -172,7 +175,7 @@ function trimContext(lines: EditLine[]): EditLine[] {
         if (changes.length === 0) continue;
         const kept = currentSegment.filter((line, index) => {
             if (line.kind !== "context") return true;
-            return changes.some((changeIndex) => Math.abs(changeIndex - index) <= CONTEXT_LINES);
+            return changes.some((changeIndex) => Math.abs(changeIndex - index) <= contextLines);
         });
         if (kept.length === 0) continue;
         if (output.length > 0) output.push({ kind: "separator", content: "..." });
@@ -281,8 +284,10 @@ function padToWidth(text: string, width: number): string {
     return truncated + " ".repeat(Math.max(0, width - visibleWidth(truncated)));
 }
 
-/** Claude Code unified Edit renderer：相对路径、三行上下文、语法及词级高亮。 */
+/** Claude Code unified Edit renderer：相对路径、折叠态有界 diff（2 行上下文/12 行上限）与词级高亮。 */
 export class ClaudeEditView implements Component {
+    private expanded = false;
+    private expandHint = resolveExpandHint();
     private model: ClaudeEditModel;
     private theme: ClaudeEditTheme;
 
@@ -301,6 +306,14 @@ export class ClaudeEditView implements Component {
 
     setTheme(theme: ClaudeEditTheme): void {
         this.theme = theme;
+    }
+
+    setExpanded(expanded: boolean): void {
+        this.expanded = expanded;
+    }
+
+    setExpandHint(hint: string): void {
+        this.expandHint = hint;
     }
 
     invalidate(): void {
@@ -325,11 +338,16 @@ export class ClaudeEditView implements Component {
         ];
 
         if (this.model.phase === "error") {
-            // 错误信息按行拆分，避免单元素内嵌 \n 破坏差分渲染的行数假设。
             const message = this.model.error || "Edit failed";
-            message.replace(/\r\n?/gu, "\n").split("\n").forEach((line, index) => {
+            const errorLines = formatErrorLines(message, this.theme, {
+                expanded: this.expanded,
+                keep: "head",
+                expandHint: this.expandHint,
+                prefixErrorLabel: false,
+            });
+            errorLines.forEach((line, index) => {
                 const prefix = index === 0 ? "  ⎿  " : INDENT;
-                output.push(truncateToWidth(prefix + (line ? this.theme.fg("error", line) : line), width, "…"));
+                output.push(truncateToWidth(prefix + line, width, "…"));
             });
             return output;
         }
@@ -345,10 +363,27 @@ export class ClaudeEditView implements Component {
             foreground(CLAUDE_COLORS.title, this.model.removals === 1 ? " line" : " lines");
         output.push(truncateToWidth(stats, width, "…"));
 
-        const maxNumber = Math.max(0, ...this.model.lines.map((line) => line.lineNumber ?? 0));
+        const candidateLines = this.expanded
+            ? this.model.lines
+            : trimContext(this.model.lines, COLLAPSED_CONTEXT_LINES);
+        const visibleLines = this.expanded
+            ? candidateLines
+            : candidateLines.slice(0, COLLAPSED_DIFF_LINES);
+
+        const maxNumber = Math.max(0, ...visibleLines.map((line) => line.lineNumber ?? 0));
         const numberWidth = Math.max(2, String(maxNumber).length);
-        for (const line of this.model.lines) {
+        for (const line of visibleLines) {
             output.push(this.renderLine(line, width, numberWidth));
+        }
+
+        const hidden = candidateLines.length - visibleLines.length;
+        if (hidden > 0) {
+            const notice = formatFoldNotice(
+                this.theme,
+                `${hidden} more ${plural(hidden, "line")}`,
+                this.expandHint,
+            );
+            output.push(truncateToWidth(`${INDENT}${notice}`, width, "…"));
         }
         return output;
     }

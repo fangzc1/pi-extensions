@@ -19,8 +19,10 @@
             "./.pi/extensions/response-timer.ts",
             "./.pi/extensions/conversation-logger.ts",
             "./.pi/extensions/model-thinking-memory.ts",
+            "./.pi/extensions/multi-accounts/index.ts",
             "./.pi/extensions/model-delegation/index.ts",
-            "./.pi/extensions/rewind-claude/index.ts"
+            "./.pi/extensions/rewind-claude/index.ts",
+            "./.pi/extensions/antigravity-cli/index.ts"
         ]
     },
     "files": [
@@ -33,6 +35,10 @@
     },
     "devDependencies": {
         "@types/node": "^26.6.6",
+        "@types/proper-lockfile": "^4.1.4",
         "typescript": "^7.0.2"
+    },
+    "dependencies": {
+        "proper-lockfile": "^4.1.2"
     }
 }

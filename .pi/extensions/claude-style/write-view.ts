@@ -1,14 +1,15 @@
-import {
-    getLanguageFromPath,
-    highlightCode,
-    keyHint,
-    keyText,
-    type Theme,
-} from "@earendil-works/pi-coding-agent";
+import { getLanguageFromPath, highlightCode, type Theme } from "@earendil-works/pi-coding-agent";
 import { truncateToWidth, visibleWidth, type Component } from "@earendil-works/pi-tui";
 
+import {
+    displayPath,
+    formatErrorLines,
+    normalizeNewlines,
+    plural,
+    resolveExpandHint,
+} from "./format-utils.ts";
+
 const INDENT = "     ";
-const PREVIEW_LINES = 10;
 
 export interface ClaudeWriteTheme {
     fg: Theme["fg"];
@@ -24,7 +25,7 @@ export interface WriteViewModel {
 }
 
 function normalizeContent(content: string): string {
-    return content.replace(/\r\n?/gu, "\n").replace(/\t/gu, "    ");
+    return normalizeNewlines(content).replace(/\t/gu, "    ");
 }
 
 function trimTrailingEmptyLines(lines: string[]): string[] {
@@ -34,17 +35,7 @@ function trimTrailingEmptyLines(lines: string[]): string[] {
 }
 
 export function getExpandHint(): string {
-    try {
-        // 键位未注册时 keyText 返回空串，但 keyHint 仍会拼出 " to expand"（含前导空格），
-        // 因此只能靠 keyText 判空，否则提示语会渲染成 "... more lines,  to expand"。
-        if (!keyText("app.tools.expand")) {
-            return "ctrl+o to expand";
-        }
-        return keyHint("app.tools.expand", "to expand");
-    } catch {
-        // 非 TUI 测试或 Theme 尚未初始化时，保证渲染器仍可安全工作。
-        return "ctrl+o to expand";
-    }
+    return resolveExpandHint();
 }
 
 export function createWriteViewModel(
@@ -52,10 +43,11 @@ export function createWriteViewModel(
     content: string,
     phase: WriteViewModel["phase"],
     error?: string,
+    cwd?: string,
 ): WriteViewModel {
     const normalized = normalizeContent(content);
     return {
-        path,
+        path: displayPath(path, cwd),
         content: normalized,
         lines: trimTrailingEmptyLines(normalized.split("\n")),
         phase,
@@ -63,11 +55,12 @@ export function createWriteViewModel(
     };
 }
 
-/** 按 Claude Code 实测样式展示 Write：标题、统计、行号与语法高亮，无卡片外框。 */
+/** Claude Code 风格 Write：折叠态仅展示去重统计行，展开态展示带行号与语法高亮的完整代码。 */
 export class ClaudeWriteView implements Component {
+    private expanded = false;
+    private expandHint = resolveExpandHint();
     private model: WriteViewModel;
     private theme: ClaudeWriteTheme;
-    private expanded = false;
 
     constructor(model: WriteViewModel, theme: ClaudeWriteTheme) {
         this.model = model;
@@ -84,6 +77,10 @@ export class ClaudeWriteView implements Component {
 
     setExpanded(expanded: boolean): void {
         this.expanded = expanded;
+    }
+
+    setExpandHint(hint: string): void {
+        this.expandHint = hint;
     }
 
     invalidate(): void {
@@ -103,45 +100,56 @@ export class ClaudeWriteView implements Component {
         const output = [truncateToWidth(header, width, "…")];
 
         if (this.model.phase === "error") {
-            // 错误信息按行拆分，避免单元素内嵌 \n 破坏差分渲染的行数假设。
             const message = this.model.error || "Write failed";
-            message.replace(/\r\n?/gu, "\n").split("\n").forEach((line, index) => {
+            const errorLines = formatErrorLines(message, this.theme, {
+                expanded: this.expanded,
+                keep: "head",
+                expandHint: this.expandHint,
+                prefixErrorLabel: false,
+            });
+            errorLines.forEach((line, index) => {
                 const prefix = index === 0 ? "  ⎿  " : INDENT;
-                output.push(truncateToWidth(prefix + (line ? this.theme.fg("error", line) : line), width, "…"));
+                output.push(truncateToWidth(prefix + line, width, "…"));
             });
             return output;
         }
 
         const count = this.model.lines.length;
-        const verb = this.model.phase === "preview" ? "Writing" : "Wrote";
-        const stats =
-            this.theme.fg("muted", `  ⎿  ${verb} `) +
-            this.theme.bold(String(count)) +
-            this.theme.fg("muted", count === 1 ? " line to " : " lines to ") +
-            this.theme.bold(this.model.path);
-        output.push(truncateToWidth(stats, width, "…"));
+        const unit = plural(count, "line");
+        if (this.model.phase === "preview") {
+            const previewStats =
+                this.theme.fg("muted", "  ⎿  Writing ") +
+                this.theme.bold(String(count)) +
+                this.theme.fg("muted", ` ${unit}…`);
+            output.push(truncateToWidth(previewStats, width, "…"));
+        } else {
+            let stats =
+                this.theme.fg("muted", "  ⎿  Wrote ") +
+                this.theme.bold(String(count)) +
+                this.theme.fg("muted", ` ${unit}`);
+            if (!this.expanded && count > 0) {
+                stats += `${this.theme.fg("muted", " (")}${this.expandHint}${this.theme.fg("muted", ")")}`;
+            }
+            output.push(truncateToWidth(stats, width, "…"));
+        }
 
-        const visibleLines = this.expanded ? this.model.lines : this.model.lines.slice(0, PREVIEW_LINES);
+        if (!this.expanded || count === 0) {
+            return output.map((line) =>
+                visibleWidth(line) <= width ? line : truncateToWidth(line, width, "…"),
+            );
+        }
+
         const language = getLanguageFromPath(this.model.path);
         const highlighted = language
-            ? highlightCode(visibleLines.join("\n"), language)
-            : visibleLines.map((line) => this.theme.fg("toolOutput", line));
+            ? highlightCode(this.model.lines.join("\n"), language)
+            : this.model.lines.map((line) => this.theme.fg("toolOutput", line));
         const numberWidth = Math.max(1, String(Math.max(1, count)).length);
 
-        visibleLines.forEach((line, index) => {
+        this.model.lines.forEach((line, index) => {
             const code = highlighted[index] ?? this.theme.fg("toolOutput", line);
             const number = this.theme.fg("dim", String(index + 1).padStart(numberWidth, " "));
             output.push(truncateToWidth(`${INDENT}${number} ${code}`, width, "…"));
         });
-
-        const remaining = count - visibleLines.length;
-        if (remaining > 0) {
-            const hint = `${INDENT}${this.theme.fg(
-                "muted",
-                `... (${remaining} more lines, ${count} total,`,
-            )} ${getExpandHint()}${this.theme.fg("muted", ")")}`;
-            output.push(truncateToWidth(hint, width, "…"));
-        }
 
         return output.map((line) =>
             visibleWidth(line) <= width ? line : truncateToWidth(line, width, "…"),

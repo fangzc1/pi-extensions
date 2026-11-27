@@ -107,7 +107,7 @@ export default function modelCollaboration(pi: ExtensionAPI): void {
                 const models = available(ctx);
                 if (!models.length) { ctx.ui.notify("当前没有可用模型", "warning"); return; }
                 const config = store.read();
-                const result = await ctx.ui.custom<Config | undefined>((tui, theme, _keys, done) => new ModelPanel({
+                await ctx.ui.custom<Config | undefined>((tui, theme, _keys, done) => new ModelPanel({
                     models: models.map((model) => {
                         const key = modelKey(model);
                         const supported = getSupportedThinkingLevels(model);
@@ -118,14 +118,19 @@ export default function modelCollaboration(pi: ExtensionAPI): void {
                         };
                     }),
                     config, theme, done, requestRender: () => tui.requestRender(), height: () => tui.terminal.rows,
+                    save: (result) => {
+                        // 保存失败也保持面板打开，允许用户重试或退出。
+                        try {
+                            store.update((state) => {
+                                state.defaultModel = result.defaultModel;
+                                Object.assign(state.levels, result.levels);
+                            });
+                            ctx.ui.notify("子模型配置已保存", "info");
+                        } catch (error) {
+                            ctx.ui.notify(error instanceof Error ? error.message : String(error), "error");
+                        }
+                    },
                 }), { blocked: { kind: "question", message: "配置子模型" } });
-                if (result) {
-                    store.update((state) => {
-                        state.defaultModel = result.defaultModel;
-                        Object.assign(state.levels, result.levels);
-                    });
-                    ctx.ui.notify("子模型配置已保存", "info");
-                }
             } catch (error) { ctx.ui.notify(error instanceof Error ? error.message : String(error), "error"); }
         },
     });

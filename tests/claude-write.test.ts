@@ -26,34 +26,54 @@ function plain(lines: string[]): string[] {
     return lines.map((line) => stripTerminalSequences(line));
 }
 
-test("使用 Claude Code 实测结构展示新建文件", () => {
+test("折叠态仅显示去重路径后的统计行，展开态展示带行号的完整代码", () => {
     const model = createWriteViewModel(
-        "src/hello.ts",
+        "/workspace/src/hello.ts",
         "export function hello(name: string): string {\n  return `Hello, ${name}!`;\n}\n",
         "success",
+        undefined,
+        "/workspace",
     );
     const view = new ClaudeWriteView(model, plainTheme);
-    const lines = plain(view.render(100));
+    view.setExpandHint("ctrl+o to expand");
 
-    assert.equal(lines[0], "⏺ write(src/hello.ts)");
-    assert.equal(lines[1], "  ⎿  Wrote 3 lines to src/hello.ts");
-    assert.match(lines[2] ?? "", /^\s+1 export function hello/);
-    assert.match(lines[3] ?? "", /^\s+2   return/);
-    assert.match(lines[4] ?? "", /^\s+3 }/);
-    assert.equal(lines.some((line) => /[┌┐└┘─]/u.test(line)), false);
-});
-
-test("默认折叠十行，展开后展示全部内容", () => {
-    const content = Array.from({ length: 12 }, (_, index) => `line ${index + 1}`).join("\n");
-    const view = new ClaudeWriteView(createWriteViewModel("notes.txt", content, "success"), plainTheme);
-
-    const collapsed = plain(view.render(80));
-    assert.ok(collapsed.some((line) => line.includes("2 more lines")));
-    assert.equal(collapsed.some((line) => line.includes("line 12")), false);
+    const collapsed = plain(view.render(100));
+    assert.deepEqual(collapsed, [
+        "⏺ write(src/hello.ts)",
+        "  ⎿  Wrote 3 lines (ctrl+o to expand)",
+    ]);
 
     view.setExpanded(true);
+    const expanded = plain(view.render(100));
+    assert.equal(expanded[0], "⏺ write(src/hello.ts)");
+    assert.equal(expanded[1], "  ⎿  Wrote 3 lines");
+    assert.match(expanded[2] ?? "", /^\s+1 export function hello/);
+    assert.match(expanded[3] ?? "", /^\s+2   return/);
+    assert.match(expanded[4] ?? "", /^\s+3 }/);
+    assert.equal(expanded.some((line) => /[┌┐└┘─]/u.test(line)), false);
+});
+
+test("预览态与空文件均不铺开正文，展开长文件展示全部行", () => {
+    const content = Array.from({ length: 12 }, (_, index) => `line ${index + 1}`).join("\n");
+    const preview = new ClaudeWriteView(
+        createWriteViewModel("notes.txt", content, "preview"),
+        plainTheme,
+    );
+    assert.deepEqual(plain(preview.render(80)), [
+        "⏺ write(notes.txt)",
+        "  ⎿  Writing 12 lines…",
+    ]);
+
+    const empty = new ClaudeWriteView(createWriteViewModel("empty.txt", "", "success"), plainTheme);
+    assert.deepEqual(plain(empty.render(80)), [
+        "⏺ write(empty.txt)",
+        "  ⎿  Wrote 0 lines",
+    ]);
+
+    const view = new ClaudeWriteView(createWriteViewModel("notes.txt", content, "success"), plainTheme);
+    view.setExpanded(true);
     const expanded = plain(view.render(80));
-    assert.equal(expanded.some((line) => line.includes("2 more lines")), false);
+    assert.ok(expanded.some((line) => line.includes("line 1")));
     assert.ok(expanded.some((line) => line.includes("line 12")));
 });
 
@@ -72,6 +92,7 @@ test("ANSI、中文和 emoji 下渲染行不超过终端宽度", () => {
     };
     const content = `export const message = "${"你好🙂".repeat(30)}";`;
     const view = new ClaudeWriteView(createWriteViewModel("很长的文件名.ts", content, "success"), ansiTheme);
+    view.setExpanded(true);
 
     assert.ok(view.render(60).every((line) => visibleWidth(line) <= 60));
 });
